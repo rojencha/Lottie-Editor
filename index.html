@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lottie Converter</title>
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--line:#2a2f3a;--fg:#e8eaf0;--mut:#8b93a5;--acc:#6c8cff;--ok:#4ade80;--err:#f87171}
+  @media (prefers-color-scheme:light){:root{--bg:#f5f6f9;--card:#fff;--line:#dde1ea;--fg:#171a21;--mut:#5d6578;--acc:#3b5bdb;--ok:#15803d;--err:#b91c1c}}
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  main{max-width:860px;margin:0 auto;padding:32px 16px 64px}
+  h1{font-size:22px;margin:0 0 4px} p.sub{margin:0 0 24px;color:var(--mut)}
+  #drop{border:2px dashed var(--line);border-radius:14px;padding:40px 16px;text-align:center;background:var(--card);cursor:pointer;transition:.15s}
+  #drop.over{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 8%,var(--card))}
+  #drop b{display:block;font-size:17px;margin-bottom:4px} #drop span{color:var(--mut)}
+  .opts{display:flex;flex-wrap:wrap;gap:16px;margin:16px 0;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px}
+  .opts label{display:flex;align-items:center;gap:6px;color:var(--mut);font-size:14px}
+  select,input[type=number]{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+  .item{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-top:8px;background:var(--card);border:1px solid var(--line);border-radius:12px}
+  .item .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .item .m{color:var(--mut);font-size:13px}
+  .item.err .m{color:var(--err)} .item.ok .m{color:var(--ok)}
+  button,a.btn{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:7px 14px;font:inherit;cursor:pointer;text-decoration:none;display:inline-block}
+  button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+  .row{display:flex;gap:8px;margin-top:14px}
+  footer{margin-top:28px;color:var(--mut);font-size:13px}
+  /* ---- editor ---- */
+  .row2{display:flex;gap:8px;align-items:center;margin-top:12px}
+  #editor{position:fixed;inset:0;z-index:20;background:var(--bg);overflow:auto}
+  .ed-top{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line)}
+  .ed-top .sp{flex:1}
+  .ed-body{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;padding:16px;max-width:1300px;margin:0 auto}
+  @media (max-width:900px){.ed-body{grid-template-columns:1fr}}
+  .ed-prev{position:sticky;top:64px;align-self:start}
+  @media (max-width:900px){.ed-prev{position:static}}
+  #stage{width:100%;max-height:62vh;border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;
+    background-color:#fff;background-image:linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%),linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%);background-size:16px 16px;background-position:0 0,8px 8px}
+  #stage svg{max-height:62vh}
+  #stageMsg{padding:24px;text-align:center;color:var(--mut)}
+  .ctl{display:flex;gap:10px;align-items:center;margin-top:10px;color:var(--mut);font-size:13px;flex-wrap:wrap}
+  .ctl input[type=range]{flex:1;min-width:120px}
+  .ed-side details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
+  .ed-side summary{cursor:pointer;padding:11px 14px;font-weight:600}
+  .ed-side .pad{padding:2px 14px 14px;display:grid;gap:10px}
+  .f{display:grid;grid-template-columns:96px 1fr 52px;gap:8px;align-items:center;font-size:13px;color:var(--mut)}
+  .f .v{text-align:right;color:var(--fg);font-variant-numeric:tabular-nums}
+  .f2{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--mut)}
+  .f2 input[type=number]{width:78px}
+  .sw{display:flex;align-items:center;gap:8px;font-size:13px}
+  .sw input[type=color]{width:34px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer}
+  .sw code{color:var(--fg)} .sw .c{color:var(--mut);flex:1}
+  .sw button,.ly button{padding:2px 8px;font-size:12px}
+  .ly{display:flex;align-items:center;gap:6px;font-size:13px}
+  .ly input[type=text]{flex:1;min-width:0;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+  .ly .t{color:var(--mut);width:48px;font-size:11px;text-transform:uppercase}
+  .ly.del{opacity:.45;text-decoration:line-through}
+  textarea#json{width:100%;height:220px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;font:12px/1.4 ui-monospace,Menlo,monospace;padding:8px}
+  #stats{margin-left:auto}
+</style>
+</head>
+<body>
+<main>
+  <h1>Lottie Converter</h1>
+  <p class="sub">dotLottie (.lottie) &harr; Lottie JSON (.json). Runs entirely in your browser &mdash; files never leave your device.</p>
+
+  <div id="drop" tabindex="0"><b>Drop files here or click to choose</b><span>.lottie and .json, multiple files allowed. Several JSONs can be bundled into one .lottie.</span></div>
+  <input id="file" type="file" multiple accept=".lottie,.json,application/json" hidden>
+  <div class="row2"><button id="openEd" class="ghost">Open a file in the editor&hellip;</button><span style="color:var(--mut);font-size:13px">Edit colors, size, timing and layers with a live preview. You can also click Edit on any converted file.</span></div>
+  <input id="edFile" type="file" accept=".lottie,.json,application/json" hidden>
+
+  <div class="opts">
+    <label>dotLottie version
+      <select id="ver"><option value="1">1 (widest support)</option><option value="2">2</option></select></label>
+    <label><input type="checkbox" id="inline" checked> Inline images when making JSON</label>
+    <label><input type="checkbox" id="extract" checked> Extract images into .lottie</label>
+    <label><input type="checkbox" id="pretty"> Pretty-print JSON</label>
+    <label><input type="checkbox" id="bundle"> Bundle all JSONs into one .lottie</label>
+  </div>
+
+  <div id="list"></div>
+  <div class="row" id="actions" hidden><button id="zipAll" class="ghost">Download all as .zip</button><button id="clear" class="ghost">Clear</button></div>
+  <footer>Validates Lottie structure, handles multi-animation files, external and embedded image assets, and tolerant manifests.</footer>
+</main>
+
+<div id="editor" hidden>
+  <div class="ed-top">
+    <b id="edTitle">Editor</b>
+    <select id="edAnim" hidden title="Animation in this file"></select>
+    <span class="sp"></span>
+    <button class="ghost" id="edUndo">Undo</button><button class="ghost" id="edRedo">Redo</button><button class="ghost" id="edReset">Reset</button>
+    <button class="ghost" id="edCopy">Copy JSON</button>
+    <button id="edJson">Download .json</button><button id="edLottie">Download .lottie</button>
+    <button class="ghost" id="edClose">Close</button>
+  </div>
+  <div class="ed-body">
+    <div class="ed-prev">
+      <div id="stage"></div>
+      <div class="ctl"><button id="play">Pause</button><input type="range" id="scrub" min="0" max="100" value="0" step="1"><span id="frameInfo"></span></div>
+      <div class="ctl">
+        <label><input type="checkbox" id="loop" checked> Loop</label>
+        <label>Preview background <select id="pbg"><option value="checker">Checkerboard</option><option value="#ffffff">White</option><option value="#111418">Dark</option></select></label>
+        <span id="stats"></span>
+      </div>
+    </div>
+    <div class="ed-side">
+      <details open><summary>Colors</summary><div class="pad">
+        <div id="swatches"></div>
+        <div class="f"><span>Hue</span><input type="range" id="hue" min="-180" max="180" value="0"><span class="v" id="hueV">0</span></div>
+        <div class="f"><span>Saturation</span><input type="range" id="sat" min="-100" max="100" value="0"><span class="v" id="satV">0</span></div>
+        <div class="f"><span>Brightness</span><input type="range" id="light" min="-100" max="100" value="0"><span class="v" id="lightV">0</span></div>
+        <div class="f2"><label><input type="checkbox" id="invert"> Invert</label><label><input type="checkbox" id="gray"> Grayscale</label></div>
+        <div style="font-size:12px;color:var(--mut)">Swatches show the original palette. Sliders adjust the whole animation on top of any swatch changes.</div>
+      </div></details>
+      <details open><summary>Size &amp; transform</summary><div class="pad">
+        <div class="f2">Canvas <input type="number" id="w" min="1" placeholder="width"> &times; <input type="number" id="h" min="1" placeholder="height"> <label><input type="checkbox" id="lock" checked> Lock ratio</label></div>
+        <div class="f2">Content <select id="fit"><option value="contain">Fit inside</option><option value="cover">Fill (crop)</option><option value="stretch">Stretch</option><option value="keep">Keep size, centered</option></select></div>
+        <div class="f"><span>Scale</span><input type="range" id="scale" min="10" max="300" value="100"><span class="v" id="scaleV">100%</span></div>
+        <div class="f"><span>Rotate</span><input type="range" id="rot" min="-180" max="180" value="0"><span class="v" id="rotV">0&deg;</span></div>
+        <div class="f2"><label><input type="checkbox" id="flipH"> Flip horizontal</label><label><input type="checkbox" id="flipV"> Flip vertical</label></div>
+      </div></details>
+      <details open><summary>Timing</summary><div class="pad">
+        <div class="f"><span>Speed</span><input type="range" id="speed" min="10" max="400" value="100"><span class="v" id="speedV">100%</span></div>
+        <div class="f2">Trim frames <input type="number" id="start" step="1" placeholder="start"> to <input type="number" id="end" step="1" placeholder="end"></div>
+      </div></details>
+      <details open><summary>Appearance</summary><div class="pad">
+        <div class="f"><span>Stroke width</span><input type="range" id="stroke" min="0" max="400" value="100"><span class="v" id="strokeV">100%</span></div>
+        <div class="f"><span>Opacity</span><input type="range" id="opacity" min="0" max="100" value="100"><span class="v" id="opacityV">100%</span></div>
+        <div class="f2"><label><input type="checkbox" id="bgOn"> Background color</label><input type="color" id="bg" value="#ffffff"></div>
+      </div></details>
+      <details><summary>Layers</summary><div class="pad" id="layers"></div></details>
+      <details id="jsonBox"><summary>Raw JSON</summary><div class="pad">
+        <div style="font-size:12px;color:var(--mut)">View the current result, edit by hand, then apply it as the new starting point (slider edits reset).</div>
+        <textarea id="json" spellcheck="false"></textarea>
+        <div class="f2"><button class="ghost" id="jsonLoad">Load current JSON</button><button id="jsonApply">Apply</button><span id="jsonMsg"></span></div>
+      </div></details>
+    </div>
+  </div>
+</div>
+
+<script id="core">
+/* ============================== CORE (no DOM) ============================== */
+const MIME_EXT={"image/png":".png","image/jpeg":".jpg","image/jpg":".jpg","image/webp":".webp","image/gif":".gif","image/svg+xml":".svg","image/avif":".avif"};
+const EXT_MIME={".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".webp":"image/webp",".gif":"image/gif",".svg":"image/svg+xml",".avif":"image/avif"};
+const GENERATOR="lottie-converter.html";
+const enc=new TextEncoder(), dec=new TextDecoder("utf-8");
+
+/* ---- CRC32 ---- */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
+
+/* ---- deflate via streams ---- */
+async function pipeAll(stream,bytes){
+  const w=stream.writable.getWriter(); w.write(bytes); w.close();
+  const out=[];const r=stream.readable.getReader();let len=0;
+  for(;;){const {done,value}=await r.read();if(done)break;out.push(value);len+=value.length}
+  const res=new Uint8Array(len);let o=0;for(const c of out){res.set(c,o);o+=c.length}return res;
+}
+const inflateRaw=b=>pipeAll(new DecompressionStream("deflate-raw"),b);
+const deflateRaw=b=>pipeAll(new CompressionStream("deflate-raw"),b);
+
+/* ---- ZIP read ---- */
+async function readZip(buf){
+  const u=new Uint8Array(buf),dv=new DataView(u.buffer,u.byteOffset,u.byteLength);
+  let e=-1;for(let i=u.length-22;i>=Math.max(0,u.length-65557);i--){if(dv.getUint32(i,true)===0x06054b50){e=i;break}}
+  if(e<0)throw new Error("corrupt zip container");
+  const count=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);
+  const files=new Map();
+  for(let i=0;i<count;i++){
+    if(dv.getUint32(p,true)!==0x02014b50)throw new Error("corrupt zip directory");
+    const method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true),nlen=dv.getUint16(p+28,true),xlen=dv.getUint16(p+30,true),clen=dv.getUint16(p+32,true),loff=dv.getUint32(p+42,true);
+    const name=dec.decode(u.subarray(p+46,p+46+nlen));
+    p+=46+nlen+xlen+clen;
+    if(name.endsWith("/"))continue;
+    const ln=dv.getUint16(loff+26,true),lx=dv.getUint16(loff+28,true),ds=loff+30+ln+lx;
+    const raw=u.subarray(ds,ds+csize);
+    files.set(name,{method,raw});
+  }
+  return {
+    names:()=>[...files.keys()],
+    has:n=>files.has(n),
+    async read(n){const f=files.get(n);if(!f)throw new Error("missing "+n);
+      if(f.method===0)return f.raw; if(f.method===8)return inflateRaw(f.raw);
+      throw new Error("unsupported zip compression method "+f.method)}
+  };
+}
+/* ---- ZIP write ---- */
+async function writeZip(entries){ // [{name,data:Uint8Array,store:boolean}]
+  const parts=[],cd=[];let off=0;
+  const dosTime=0,dosDate=((2020-1980)<<9)|(1<<5)|1;
+  for(const en of entries){
+    const nameB=enc.encode(en.name),crc=crc32(en.data);
+    const comp=en.store?en.data:await deflateRaw(en.data),method=en.store?0:8;
+    const lh=new Uint8Array(30+nameB.length),d=new DataView(lh.buffer);
+    d.setUint32(0,0x04034b50,true);d.setUint16(4,20,true);d.setUint16(6,0x0800,true);d.setUint16(8,method,true);
+    d.setUint16(10,dosTime,true);d.setUint16(12,dosDate,true);d.setUint32(14,crc,true);
+    d.setUint32(18,comp.length,true);d.setUint32(22,en.data.length,true);d.setUint16(26,nameB.length,true);
+    lh.set(nameB,30);parts.push(lh,comp);
+    const ch=new Uint8Array(46+nameB.length),c=new DataView(ch.buffer);
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,method,true);
+    c.setUint16(12,dosTime,true);c.setUint16(14,dosDate,true);c.setUint32(16,crc,true);
+    c.setUint32(20,comp.length,true);c.setUint32(24,en.data.length,true);c.setUint16(28,nameB.length,true);c.setUint32(42,off,true);
+    ch.set(nameB,46);cd.push(ch);
+    off+=lh.length+comp.length;
+  }
+  const cdSize=cd.reduce((a,b)=>a+b.length,0);
+  const eo=new Uint8Array(22),e=new DataView(eo.buffer);
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,entries.length,true);e.setUint16(10,entries.length,true);
+  e.setUint32(12,cdSize,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cd,eo],{type:"application/zip"});
+}
+
+/* ---- helpers ---- */
+const b64enc=u=>{let s="";for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)};
+const b64dec=s=>{const bin=atob(s.replace(/\s/g,""));const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u};
+const safeName=s=>(s.replace(/[^\w.\-]+/g,"_").replace(/^[._]+|[._]+$/g,""))||"animation";
+const stem=n=>n.replace(/\.[^.]+$/,"");
+async function sha12(u){const h=new Uint8Array(await crypto.subtle.digest("SHA-1",u));return[...h].slice(0,6).map(x=>x.toString(16).padStart(2,"0")).join("")}
+function parseJSON(bytes,what){
+  try{return JSON.parse(dec.decode(bytes).replace(/^﻿/,""))}catch(e){throw new Error(what+": invalid JSON ("+e.message+")")}
+}
+function validateLottie(o,what){
+  if(!o||typeof o!=="object"||Array.isArray(o))throw new Error(what+": root is not an object");
+  const miss=["fr","ip","op","w","h","layers"].filter(k=>!(k in o));
+  if(miss.length)throw new Error(what+": not a Lottie animation, missing "+miss.join(", "));
+  if(!Array.isArray(o.layers))throw new Error(what+": 'layers' must be a list");
+  if(!(o.fr>0&&o.w>0&&o.h>0))throw new Error(what+": invalid fr/w/h");
+}
+function sniff(u){
+  if(u[0]===0x50&&u[1]===0x4b)return"lottie";
+  let i=0;if(u[0]===0xEF&&u[1]===0xBB&&u[2]===0xBF)i=3;
+  while(i<u.length&&[32,9,10,13].includes(u[i]))i++;
+  if(u[i]===0x7B)return"json";
+  throw new Error("not a dotLottie (zip) or Lottie JSON file");
+}
+function findInZip(z,name,prefixes){
+  const names=z.names(),lower=new Map(names.map(n=>[n.toLowerCase(),n]));
+  for(const pre of prefixes){const c=pre+name;if(z.has(c))return c;if(lower.has(c.toLowerCase()))return lower.get(c.toLowerCase())}
+  if(z.has(name))return name;
+  const base=name.split("/").pop().toLowerCase();
+  return names.find(n=>n.split("/").pop().toLowerCase()===base)||null;
+}
+
+/* ---- dotLottie -> JSON ---- */
+async function dotLottieToJson(buf,{inline=true}={}){
+  const z=await readZip(buf);
+  if(!z.has("manifest.json"))throw new Error("manifest.json missing - not a valid dotLottie");
+  const manifest=parseJSON(await z.read("manifest.json"),"manifest.json");
+  const ids=(manifest.animations||[]).map(a=>typeof a==="string"?a:a&&a.id).filter(Boolean);
+  const anims=[];
+  for(const id of ids){
+    const p=findInZip(z,id+".json",["animations/","a/"]);
+    if(!p)throw new Error("animation '"+id+"' listed in manifest but not found in archive");
+    anims.push([id,parseJSON(await z.read(p),p)]);
+  }
+  if(!anims.length)for(const n of z.names())if(/^(animations|a)\/.+\.json$/.test(n))anims.push([n.split("/").pop().replace(/\.json$/,""),parseJSON(await z.read(n),n)]);
+  if(!anims.length)throw new Error("no animations found in archive");
+  if(inline)for(const [,anim] of anims)for(const a of anim.assets||[]){
+    if(!a||typeof a!=="object"||!("p" in a)||a.t==="audio")continue;
+    const p=a.p;if(!p||String(p).startsWith("data:"))continue;
+    const u=a.u||"";const full=u?(u.replace(/^\/+|\/+$/g,"")+"/"+p).replace(/^\//,""):p;
+    const hit=findInZip(z,full,["images/","i/"])||findInZip(z,p,["images/","i/"]);
+    if(!hit)continue;
+    const ext=(hit.match(/\.[^./]+$/)||[""])[0].toLowerCase();
+    a.u="";a.p="data:"+(EXT_MIME[ext]||"application/octet-stream")+";base64,"+b64enc(await z.read(hit));a.e=1;
+  }
+  return anims;
+}
+
+/* ---- JSON -> dotLottie ---- */
+async function jsonToDotLottie(items,{extract=true,version="1",pretty=false}={}){
+  const adir=version==="1"?"animations/":"a/",idir=version==="1"?"images/":"i/",prefix=version==="1"?"/images/":"/i/";
+  const manifest={version,generator:GENERATOR,animations:[]};
+  const used=new Set(),files=new Map();
+  for(let [id,anim] of items){
+    const base=safeName(id);let k=1;id=base;while(used.has(id)){k++;id=base+"_"+k}used.add(id);
+    if(extract)for(const a of anim.assets||[]){
+      if(!a||typeof a.p!=="string"||a.t==="audio")continue;
+      const m=a.p.match(/^data:([\w.+\/-]+);base64,([\s\S]*)$/);if(!m)continue;
+      let blob;try{blob=b64dec(m[2])}catch{continue}
+      const name=(await sha12(blob))+(MIME_EXT[m[1].toLowerCase()]||".bin");
+      files.set(idir+name,{data:blob,store:true});
+      a.u=prefix;a.p=name;a.e=0;
+    }
+    manifest.animations.push({id});
+    files.set(adir+id+".json",{data:enc.encode(JSON.stringify(anim,null,pretty?2:0)||""),store:false});
+  }
+  const entries=[{name:"manifest.json",data:enc.encode(JSON.stringify(manifest,null,2)),store:false}];
+  for(const [name,f] of files)entries.push({name,...f});
+  return writeZip(entries);
+}
+
+/* ---- top-level: convert one or more files ---- */
+async function convertFiles(files,opts){ // files: [{name,bytes:Uint8Array}] -> [{name,blob|bytes,info}]
+  const outs=[];
+  const kinds=files.map(f=>sniff(f.bytes));
+  const jsons=[];
+  for(let i=0;i<files.length;i++){
+    const f=files[i];
+    if(kinds[i]==="lottie"){
+      const anims=await dotLottieToJson(f.bytes,{inline:opts.inline});
+      for(const [id,anim] of anims){
+        validateLottie(anim,f.name+":"+id);
+        const name=anims.length===1?stem(f.name)+".json":stem(f.name)+"_"+safeName(id)+".json";
+        outs.push({name,blob:new Blob([JSON.stringify(anim,null,opts.pretty?2:0)],{type:"application/json"}),src:f.name});
+      }
+    }else{
+      const anim=parseJSON(f.bytes,f.name);validateLottie(anim,f.name);
+      jsons.push([stem(f.name),anim,f.name]);
+    }
+  }
+  if(jsons.length){
+    const groups=opts.bundle&&jsons.length>1?[jsons]:jsons.map(j=>[j]);
+    for(const g of groups){
+      const blob=await jsonToDotLottie(g.map(([id,a])=>[id,a]),{extract:opts.extract,version:opts.version,pretty:opts.pretty});
+      outs.push({name:(g.length>1?"bundle":g[0][0])+".lottie",blob,src:g.map(x=>x[2]).join(", ")});
+    }
+  }
+  return outs;
+}
+/* ============================== /CORE ============================== */
+</script>
+
+<script id="editcore">
+/* ============================== EDIT CORE (no DOM) ==============================
+   Non-destructive: applyEdits(base, params) always starts from the untouched base
+   and returns a fresh edited copy, so undo/reset/preview are trivial and idempotent. */
+const clone=o=>JSON.parse(JSON.stringify(o));
+const _h2=n=>Math.max(0,Math.min(255,Math.round(n*255))).toString(16).padStart(2,"0");
+const toHex=c=>"#"+_h2(c[0])+_h2(c[1])+_h2(c[2]);
+const fromHex=h=>{h=String(h).replace("#","");if(h.length===3)h=[...h].map(x=>x+x).join("");return[0,2,4].map(i=>(parseInt(h.substr(i,2),16)||0)/255)};
+function rgb2hsl(r,g,b){const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;let h=0,s=0;
+  if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);h=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;h/=6}return[h,s,l]}
+function hsl2rgb(h,s,l){if(s===0)return[l,l,l];const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;
+  const f=t=>{t=(t%1+1)%1;return t<1/6?p+(q-p)*6*t:t<.5?q:t<2/3?p+(q-p)*(2/3-t)*6:p};return[f(h+1/3),f(h),f(h-1/3)]}
+
+const DEFAULTS=()=>({colors:{},hue:0,sat:0,light:0,invert:false,gray:false,stroke:100,opacity:100,speed:100,
+  start:null,end:null,w:null,h:null,fit:"contain",scale:100,rot:0,flipH:false,flipV:false,bgOn:false,bg:"#ffffff",layers:{}});
+
+/* ---- colour traversal: fn(rgb)->rgb|undefined, edits in place ---- */
+function touchArr(arr,fn,grad){
+  const one=o=>{if(arr.length<o+3||typeof arr[o]!=="number")return;const r=fn([arr[o],arr[o+1],arr[o+2]]);if(r){arr[o]=r[0];arr[o+1]=r[1];arr[o+2]=r[2]}};
+  if(grad){for(let i=0;i<grad;i++)one(4*i+1)}else one(0);
+}
+function visitColorProp(prop,fn,grad){
+  if(!prop||prop.k==null)return;const k=prop.k;
+  if(Array.isArray(k)&&k.length&&k[0]&&typeof k[0]==="object"&&!Array.isArray(k[0])){
+    for(const kf of k)for(const key of["s","e"])if(Array.isArray(kf[key]))touchArr(kf[key],fn,grad);
+  }else if(Array.isArray(k))touchArr(k,fn,grad);
+}
+function eachShape(items,f){for(const it of items||[]){f(it);if(it.it)eachShape(it.it,f)}}
+function visitColors(anim,fn){
+  const sets=[anim.layers||[]];for(const a of anim.assets||[])if(Array.isArray(a.layers))sets.push(a.layers);
+  for(const layers of sets)for(const L of layers){
+    if(L.ty===1&&typeof L.sc==="string"){const r=fn(fromHex(L.sc));if(r)L.sc=toHex(r)}
+    eachShape(L.shapes,it=>{
+      if(it.ty==="fl"||it.ty==="st")visitColorProp(it.c,fn,0);
+      else if((it.ty==="gf"||it.ty==="gs")&&it.g)visitColorProp(it.g.k,fn,it.g.p||0);
+    });
+    if(L.t&&L.t.d&&Array.isArray(L.t.d.k))for(const kf of L.t.d.k){const s=kf&&kf.s;if(s){if(Array.isArray(s.fc))touchArr(s.fc,fn,0);if(Array.isArray(s.sc))touchArr(s.sc,fn,0)}}
+    for(const ef of L.ef||[])for(const sub of ef.ef||[])if(sub.ty===2)visitColorProp(sub.v,fn,0);
+  }
+}
+function listColors(anim){
+  const m=new Map();visitColors(anim,c=>{const h=toHex(c);m.set(h,(m.get(h)||0)+1)});
+  return[...m].sort((a,b)=>b[1]-a[1]);
+}
+function adjustColor(c,P){
+  let[r,g,b]=c;if(P.invert){r=1-r;g=1-g;b=1-b}
+  if(P.gray||P.hue||P.sat||P.light){
+    let[h,s,l]=rgb2hsl(r,g,b);
+    h=(h+P.hue/360+1)%1;s=P.gray?0:Math.max(0,Math.min(1,P.sat>=0?s+(1-s)*P.sat/100:s*(1+P.sat/100)));
+    l=P.light>=0?l+(1-l)*P.light/100:l*(1+P.light/100);
+    [r,g,b]=hsl2rgb(h,s,Math.max(0,Math.min(1,l)));
+  }
+  return[r,g,b];
+}
+function mapNum(prop,f){
+  if(!prop||prop.k==null)return;const k=prop.k;
+  if(typeof k==="number"){prop.k=f(k);return}
+  if(Array.isArray(k)){
+    if(k.length&&k[0]&&typeof k[0]==="object"){for(const kf of k)for(const key of["s","e"])if(Array.isArray(kf[key]))kf[key]=kf[key].map(f)}
+    else prop.k=k.map(f);
+  }
+}
+const nextInd=layers=>layers.reduce((m,l)=>Math.max(m,l.ind||0),0)+1;
+const staticProp=v=>({a:0,k:v});
+
+function applyEdits(base,P){
+  const A=clone(base);P=Object.assign(DEFAULTS(),P||{});
+  /* 1. layers: delete / hide / rename (keyed by index in the base file) */
+  const removed=new Set(),keep=[];
+  A.layers.forEach((L,i)=>{
+    const e=P.layers[i]||{};
+    if(e.deleted){if(L.ind!=null)removed.add(L.ind);return}
+    if(e.name)L.nm=e.name;
+    if(e.hidden){L.hd=true;L.ks=L.ks||{};L.ks.o=staticProp(0)}
+    keep.push(L);
+  });
+  A.layers=keep;
+  if(removed.size)for(const L of keep)if(removed.has(L.parent))delete L.parent;
+
+  /* 2. colours: explicit swatch replacements first, then global adjustments */
+  const neutral=!(P.invert||P.gray||P.hue||P.sat||P.light),hasMap=Object.keys(P.colors).length>0;
+  if(hasMap||!neutral)visitColors(A,c=>{
+    let out=null;const m=P.colors[toHex(c)];
+    if(m)out=fromHex(m);
+    if(!neutral)out=adjustColor(out||c,P);
+    return out;
+  });
+
+  /* 3. stroke width, global opacity */
+  if(P.stroke!==100){
+    const f=P.stroke/100,sets=[A.layers];for(const a of A.assets||[])if(Array.isArray(a.layers))sets.push(a.layers);
+    for(const ls of sets)for(const L of ls)eachShape(L.shapes,it=>{if(it.ty==="st"||it.ty==="gs")mapNum(it.w,v=>v*f)});
+  }
+  if(P.opacity!==100)for(const L of A.layers)if(L.ks&&L.ks.o)mapNum(L.ks.o,v=>Math.max(0,Math.min(100,v*P.opacity/100)));
+
+  /* 4. timing: speed (frame rate) and trim */
+  if(P.speed!==100)A.fr=+(base.fr*P.speed/100).toFixed(4);
+  if(P.start!=null||P.end!=null){
+    const s=Math.max(base.ip,P.start==null?base.ip:P.start),e=Math.min(base.op,P.end==null?base.op:P.end);
+    if(e>s+1){A.ip=s;A.op=e}
+  }
+
+  /* 5. canvas size + transform via one wrapper null layer parenting all root layers */
+  const w0=base.w,h0=base.h,w1=Math.max(1,Math.round(P.w||w0)),h1=Math.max(1,Math.round(P.h||h0));
+  let sx=1,sy=1;
+  if(P.fit==="contain")sx=sy=Math.min(w1/w0,h1/h0);
+  else if(P.fit==="cover")sx=sy=Math.max(w1/w0,h1/h0);
+  else if(P.fit==="stretch"){sx=w1/w0;sy=h1/h0}
+  sx*=P.scale/100;sy*=P.scale/100;
+  if(P.flipH)sx=-sx;if(P.flipV)sy=-sy;
+  A.w=w1;A.h=h1;
+  if(w1!==w0||h1!==h0||Math.abs(sx)!==1||Math.abs(sy)!==1||sx<0||sy<0||P.rot){
+    const ind=nextInd(A.layers);
+    for(const L of A.layers)if(L.parent==null)L.parent=ind;
+    A.layers.push({ddd:0,ind,ty:3,nm:"__transform",sr:1,ks:{o:staticProp(0),r:staticProp(P.rot),
+      p:staticProp([w1/2,h1/2,0]),a:staticProp([w0/2,h0/2,0]),s:staticProp([sx*100,sy*100,100])},
+      ao:0,ip:base.ip,op:base.op,st:0,bm:0});
+  }
+
+  /* 6. background: solid layer at the bottom of the stack */
+  if(P.bgOn)A.layers.push({ddd:0,ind:nextInd(A.layers),ty:1,nm:"__background",sr:1,
+    ks:{o:staticProp(100),r:staticProp(0),p:staticProp([w1/2,h1/2,0]),a:staticProp([w1/2,h1/2,0]),s:staticProp([100,100,100])},
+    ao:0,sw:w1,sh:h1,sc:P.bg||"#ffffff",ip:base.ip,op:base.op,st:0,bm:0});
+  return A;
+}
+const durationOf=a=>(a.op-a.ip)/a.fr;
+/* ============================== /EDIT CORE ============================== */
+</script>
+
+<script>
+/* ============================== UI ============================== */
+if(typeof document!=="undefined"){
+const $=id=>document.getElementById(id);
+const drop=$("drop"),fileIn=$("file"),list=$("list"),actions=$("actions");
+let results=[];
+const fmt=n=>n<1024?n+" B":n<1048576?(n/1024).toFixed(1)+" KB":(n/1048576).toFixed(2)+" MB";
+const opts=()=>({inline:$("inline").checked,extract:$("extract").checked,pretty:$("pretty").checked,bundle:$("bundle").checked,version:$("ver").value});
+
+function row(cls,name,meta,url,dl,onEdit){
+  const d=document.createElement("div");d.className="item "+cls;
+  d.innerHTML='<div class="n"></div><div class="m"></div>';
+  d.firstChild.textContent=name;d.children[1].textContent=meta;
+  if(onEdit){const b=document.createElement("button");b.className="ghost";b.textContent="Edit";b.onclick=onEdit;d.appendChild(b)}
+  if(url){const a=document.createElement("a");a.className="btn";a.href=url;a.download=dl;a.textContent="Download";d.appendChild(a)}
+  list.appendChild(d);
+}
+async function handle(fileList){
+  const arr=[...fileList];if(!arr.length)return;
+  const inputs=[];
+  for(const f of arr){inputs.push({name:f.name,bytes:new Uint8Array(await f.arrayBuffer())})}
+  // convert per-file so one bad file doesn't block the rest (bundle mode keeps JSONs together)
+  const o=opts();let batches;
+  if(o.bundle){const js=inputs.filter(i=>{try{return sniff(i.bytes)==="json"}catch{return false}});const rest=inputs.filter(i=>!js.includes(i));batches=[...rest.map(r=>[r]),js].filter(b=>b.length)}
+  else batches=inputs.map(i=>[i]);
+  for(const b of batches){
+    try{
+      const outs=await convertFiles(b,o);
+      for(const out of outs){
+        const url=URL.createObjectURL(out.blob);results.push({name:out.name,blob:out.blob});
+        row("ok",out.name,fmt(out.blob.size)+" · from "+out.src,url,out.name,
+          async()=>{try{await openEditor(out.name,new Uint8Array(await out.blob.arrayBuffer()))}catch(e){alert(e.message)}});
+      }
+    }catch(e){row("err",b.map(x=>x.name).join(", "),e.message)}
+  }
+  actions.hidden=!results.length&&!list.children.length;
+}
+drop.onclick=()=>fileIn.click();
+drop.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();fileIn.click()}};
+fileIn.onchange=()=>{handle(fileIn.files);fileIn.value=""};
+["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("over")}));
+["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("over")}));
+drop.addEventListener("drop",e=>handle(e.dataTransfer.files));
+$("clear").onclick=()=>{list.innerHTML="";results=[];actions.hidden=true};
+$("zipAll").onclick=async()=>{
+  if(!results.length)return;
+  const seen=new Map(),entries=[];
+  for(const r of results){let n=r.name;if(seen.has(n)){const c=seen.get(n)+1;seen.set(n,c);n=n.replace(/(\.[^.]+)$/,"_"+c+"$1")}else seen.set(n,1);
+    entries.push({name:n,data:new Uint8Array(await r.blob.arrayBuffer()),store:false})}
+  const blob=await writeZip(entries),a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download="converted.zip";a.click();
+};
+}
+</script>
+
+<script id="editor-ui">
+/* ============================== EDITOR UI ============================== */
+let ed=null; // {name,anims,idx,base,P,hist,hi,anim,tok,out}
+const $e=id=>document.getElementById(id);
+const LAYER_TYPES={0:"Precomp",1:"Solid",2:"Image",3:"Null",4:"Shape",5:"Text",6:"Audio",13:"Camera"};
+let lottiePromise=null;
+function ensureLottie(){
+  if(window.lottie)return Promise.resolve();
+  if(!lottiePromise)lottiePromise=new Promise((res,rej)=>{
+    const load=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+    // self-hosted copy first, CDN as a fallback (e.g. when index.html is opened on its own)
+    load("lottie.min.js").catch(()=>load("https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js")).then(res,()=>{lottiePromise=null;rej(new Error("player"))});
+  });
+  return lottiePromise;
+}
+function dlBlob(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+
+async function openEditor(name,bytes){
+  const kind=sniff(bytes);let anims;
+  if(kind==="lottie")anims=await dotLottieToJson(bytes,{inline:true});
+  else anims=[[stem(name),parseJSON(bytes,name)]];
+  for(const [id,a] of anims)validateLottie(a,name+":"+id);
+  ed={name:stem(name),anims,idx:0,anim:null,tok:0,hist:[],hi:0};
+  $e("edTitle").textContent="Editing "+name;
+  const sel=$e("edAnim");sel.hidden=anims.length<2;
+  sel.innerHTML="";anims.forEach(([id],i)=>{const o=document.createElement("option");o.value=i;o.textContent=id;sel.appendChild(o)});
+  $e("editor").hidden=false;document.body.style.overflow="hidden";
+  loadAnim(0);
+}
+function loadAnim(i){
+  ed.idx=i;ed.base=ed.anims[i][1];ed.P=DEFAULTS();
+  ed.hist=[{base:ed.base,P:clone(ed.P)}];ed.hi=0;
+  if(ed.anim){ed.anim.destroy();ed.anim=null}
+  buildAll();render();
+}
+function buildAll(){syncUI();buildSwatches();buildLayers()}
+
+/* ---- sync controls from state ---- */
+const RANGES={hue:"",sat:"",light:"",scale:"%",rot:"°",speed:"%",stroke:"%",opacity:"%"};
+function syncUI(){
+  const P=ed.P,b=ed.base;
+  for(const k in RANGES){$e(k).value=P[k];$e(k+"V").textContent=P[k]+RANGES[k]}
+  for(const k of["invert","gray","flipH","flipV","bgOn"])$e(k).checked=P[k];
+  $e("fit").value=P.fit;$e("bg").value=P.bg||"#ffffff";
+  $e("w").placeholder=b.w;$e("h").placeholder=b.h;$e("w").value=P.w??"";$e("h").value=P.h??"";
+  $e("start").placeholder=b.ip;$e("end").placeholder=b.op;$e("start").value=P.start??"";$e("end").value=P.end??"";
+}
+function buildSwatches(){
+  const box=$e("swatches");box.innerHTML="";
+  const cols=listColors(ed.base);
+  if(!cols.length){box.innerHTML='<div style="font-size:13px;color:var(--mut)">No editable solid colors found (the file may use images or expressions).</div>';return}
+  for(const [hex,count] of cols.slice(0,80)){
+    const cur=ed.P.colors[hex]||hex,d=document.createElement("div");d.className="sw";
+    d.innerHTML='<input type="color"><code></code><span class="c"></span><button class="ghost">Reset</button>';
+    const inp=d.children[0],code=d.children[1],c=d.children[2],rs=d.children[3];
+    inp.value=cur;code.textContent=cur;c.textContent=count+"×";rs.hidden=cur===hex;
+    inp.oninput=()=>{if(inp.value===hex)delete ed.P.colors[hex];else ed.P.colors[hex]=inp.value;code.textContent=inp.value;rs.hidden=inp.value===hex;schedule()};
+    rs.onclick=()=>{delete ed.P.colors[hex];inp.value=hex;code.textContent=hex;rs.hidden=true;schedule();commit()};
+    box.appendChild(d);
+  }
+  if(cols.length>80){const n=document.createElement("div");n.style.cssText="font-size:12px;color:var(--mut)";n.textContent="Showing the 80 most used of "+cols.length+" colors. Use the sliders for the rest.";box.appendChild(n)}
+}
+function setLayer(i,patch){
+  const e=Object.assign(ed.P.layers[i]||{},patch);
+  if(!e.deleted&&!e.hidden&&!e.name)delete ed.P.layers[i];else ed.P.layers[i]=e;
+}
+function buildLayers(){
+  const box=$e("layers");box.innerHTML="";
+  ed.base.layers.forEach((L,i)=>{
+    const e=ed.P.layers[i]||{},d=document.createElement("div");d.className="ly"+(e.deleted?" del":"");
+    d.innerHTML='<input type="checkbox" title="Visible"><span class="t"></span><input type="text"><button class="ghost"></button>';
+    const vis=d.children[0],t=d.children[1],nm=d.children[2],bt=d.children[3];
+    vis.checked=!e.hidden;t.textContent=LAYER_TYPES[L.ty]||("ty"+L.ty);
+    nm.value=e.name||L.nm||"";nm.placeholder="Layer "+(i+1);
+    bt.textContent=e.deleted?"Restore":"Delete";
+    vis.onchange=()=>{setLayer(i,{hidden:!vis.checked});schedule();commit()};
+    nm.oninput=()=>{setLayer(i,{name:nm.value.trim()&&nm.value!==L.nm?nm.value.trim():""});schedule()};
+    bt.onclick=()=>{setLayer(i,{deleted:!e.deleted});buildLayers();schedule();commit()};
+    box.appendChild(d);
+  });
+  if(!ed.base.layers.length)box.textContent="No layers.";
+}
+
+/* ---- history ---- */
+function commit(){
+  const cur=ed.hist[ed.hi],snap=JSON.stringify(ed.P);
+  if(cur.base===ed.base&&JSON.stringify(cur.P)===snap)return;
+  ed.hist=ed.hist.slice(0,ed.hi+1);ed.hist.push({base:ed.base,P:JSON.parse(snap)});
+  if(ed.hist.length>80)ed.hist.shift();
+  ed.hi=ed.hist.length-1;
+}
+function restore(i){
+  ed.hi=i;const s=ed.hist[i];ed.base=s.base;ed.P=clone(s.P);buildAll();render();
+}
+
+/* ---- preview ---- */
+let tmr=null;
+function schedule(){clearTimeout(tmr);tmr=setTimeout(render,70)}
+function setStageBg(){
+  const v=$e("pbg").value,st=$e("stage");
+  if(v==="checker"){st.style.backgroundColor="";st.style.backgroundImage=""}
+  else{st.style.backgroundImage="none";st.style.backgroundColor=v}
+}
+async function render(){
+  if(!ed)return;
+  const tok=++ed.tok,out=applyEdits(ed.base,ed.P);ed.out=out;
+  $e("stats").textContent=out.w+"×"+out.h+" · "+(+out.fr.toFixed(2))+" fps · "+durationOf(out).toFixed(2)+" s · "+out.layers.length+" layers";
+  const stage=$e("stage");
+  try{await ensureLottie()}catch{
+    if(tok===ed.tok)stage.innerHTML='<div id="stageMsg">The live preview needs internet access to load the lottie-web player (cdnjs).<br>Editing and downloads still work.</div>';
+    return;
+  }
+  if(tok!==ed.tok)return;
+  const prev=ed.anim,wasPaused=prev?prev.isPaused:false,frame=prev?prev.currentFrame:0;
+  if(prev)prev.destroy();
+  stage.innerHTML="";
+  const a=lottie.loadAnimation({container:stage,renderer:"svg",loop:$e("loop").checked,autoplay:false,animationData:out});
+  ed.anim=a;
+  const scrub=$e("scrub"),info=$e("frameInfo"),play=$e("play");
+  a.addEventListener("DOMLoaded",()=>{
+    scrub.max=Math.max(1,Math.floor(a.totalFrames)-1);
+    const f=Math.min(frame,a.totalFrames-1);
+    if(wasPaused)a.goToAndStop(f,true);else a.goToAndPlay(f,true);
+    play.textContent=wasPaused?"Play":"Pause";
+  });
+  a.addEventListener("enterFrame",()=>{scrub.value=a.currentFrame;info.textContent=Math.round(a.currentFrame)+" / "+Math.round(a.totalFrames)});
+  a.addEventListener("complete",()=>{play.textContent="Play"});
+}
+
+/* ---- controls ---- */
+(function wire(){
+  const side=document.querySelector(".ed-side");
+  side.addEventListener("input",e=>{
+    if(!ed)return;const t=e.target,id=t.id,P=ed.P;
+    if(id in RANGES){P[id]=+t.value;$e(id+"V").textContent=t.value+RANGES[id]}
+    else if(["invert","gray","flipH","flipV","bgOn"].includes(id))P[id]=t.checked;
+    else if(id==="fit")P.fit=t.value;
+    else if(id==="bg"){P.bg=t.value;P.bgOn=true;$e("bgOn").checked=true}
+    else if(id==="w"||id==="h"){
+      const v=t.value===""?null:Math.max(1,parseInt(t.value,10)||1);P[id]=v;
+      if($e("lock").checked&&v!=null){
+        const o=id==="w"?"h":"w",r=id==="w"?ed.base.h/ed.base.w:ed.base.w/ed.base.h,ov=Math.max(1,Math.round(v*r));
+        P[o]=ov;$e(o).value=ov;
+      }else if(v==null&&$e("lock").checked){const o=id==="w"?"h":"w";P[o]=null;$e(o).value=""}
+    }
+    else if(id==="start"||id==="end")P[id]=t.value===""?null:+t.value;
+    else return;
+    schedule();
+  });
+  side.addEventListener("change",()=>{if(ed)commit()});
+  $e("edUndo").onclick=()=>{if(ed&&ed.hi>0)restore(ed.hi-1)};
+  $e("edRedo").onclick=()=>{if(ed&&ed.hi<ed.hist.length-1)restore(ed.hi+1)};
+  $e("edReset").onclick=()=>{if(!ed)return;ed.base=ed.anims[ed.idx][1];ed.P=DEFAULTS();commit();buildAll();render()};
+  $e("edAnim").onchange=e=>loadAnim(+e.target.value);
+  $e("edClose").onclick=closeEditor;
+  document.addEventListener("keydown",e=>{
+    if(!ed||$e("editor").hidden)return;
+    if(e.key==="Escape"&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))closeEditor();
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"&&!/TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();e.shiftKey?$e("edRedo").click():$e("edUndo").click()}
+  });
+  $e("play").onclick=()=>{const a=ed&&ed.anim;if(!a)return;if(a.isPaused){a.play();$e("play").textContent="Pause"}else{a.pause();$e("play").textContent="Play"}};
+  $e("scrub").oninput=e=>{const a=ed&&ed.anim;if(!a)return;a.goToAndStop(+e.target.value,true);$e("play").textContent="Play"};
+  $e("loop").onchange=e=>{if(ed&&ed.anim)ed.anim.setLoop(e.target.checked)};
+  $e("pbg").onchange=setStageBg;
+  const dlName=ext=>ed.name+"-edited."+ext;
+  $e("edJson").onclick=()=>{if(!ed)return;
+    dlBlob(new Blob([JSON.stringify(applyEdits(ed.base,ed.P),null,$e("pretty").checked?2:0)],{type:"application/json"}),dlName("json"))};
+  $e("edLottie").onclick=async()=>{if(!ed)return;
+    const id=safeName(ed.anims[ed.idx][0]);
+    dlBlob(await jsonToDotLottie([[id,applyEdits(ed.base,ed.P)]],{extract:$e("extract").checked,version:$e("ver").value}),dlName("lottie"))};
+  $e("edCopy").onclick=async()=>{if(!ed)return;const b=$e("edCopy");
+    try{await navigator.clipboard.writeText(JSON.stringify(applyEdits(ed.base,ed.P)));b.textContent="Copied";}catch{b.textContent="Copy failed"}
+    setTimeout(()=>b.textContent="Copy JSON",1500)};
+  $e("jsonLoad").onclick=()=>{if(ed){$e("json").value=JSON.stringify(applyEdits(ed.base,ed.P),null,2);$e("jsonMsg").textContent=""}};
+  $e("jsonApply").onclick=()=>{
+    if(!ed)return;const msg=$e("jsonMsg");
+    try{
+      const o=JSON.parse($e("json").value);validateLottie(o,"JSON");
+      ed.base=o;ed.P=DEFAULTS();commit();buildAll();render();msg.style.color="var(--ok)";msg.textContent="Applied"
+    }catch(err){msg.style.color="var(--err)";msg.textContent=err.message}
+  };
+  $e("openEd").onclick=()=>$e("edFile").click();
+  $e("edFile").onchange=async e=>{
+    const f=e.target.files[0];e.target.value="";if(!f)return;
+    try{await openEditor(f.name,new Uint8Array(await f.arrayBuffer()))}catch(err){alert(f.name+": "+err.message)}
+  };
+})();
+function closeEditor(){
+  if(ed&&ed.anim){ed.anim.destroy();ed.anim=null}
+  $e("stage").innerHTML="";$e("editor").hidden=true;document.body.style.overflow="";ed=null;
+}
+</script>
+</body>
+</html>
