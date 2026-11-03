@@ -1,7 +1,8 @@
-// Collection management (Approvers within their verticals; Administrators everywhere).
+// Group management for related assets in the library.
 import { app, verticalName, teamName, teamsOf } from "../state.js";
-import { h, modal, field, confirmDialog, toast, icon, plural } from "../ui/dom.js";
+import { h, modal, field, confirmDialog, toast, icon, plural, download } from "../ui/dom.js";
 import { check, inScope } from "../core/policy.js";
+import { writeZip } from "../core/zip.js";
 
 const TYPE_LABEL = { company: "Company-wide", vertical: "Vertical", team: "Team" };
 export const scopeLabel = (c) => c.type === "company" ? "Company-wide" : c.type === "vertical" ? verticalName(c.verticalId) : `${verticalName(c.verticalId)} · ${teamName(c.teamId)}`;
@@ -15,9 +16,23 @@ export async function manageCollections(onChange) {
       const can = check(u, "collection.manage", c);
       const n = assets.filter((a) => a.collectionIds.includes(c.id)).length;
       return h("div", { class: "cell" }, h("div", { class: "grow" }, h("div", { class: "t" }, c.name), h("div", { class: "s" }, `${scopeLabel(c)} · ${plural(n, "asset")}${c.description ? " · " + c.description : ""}`)),
+        n ? h("button", { class: "btn gray sm", type: "button", onclick: async () => {
+          try {
+            const members = assets.filter((a) => a.collectionIds.includes(c.id)), entries = [], used = new Set();
+            for (const a of members) {
+              const v = a.versions.find((x) => x.n === (a.approvedVersion ?? a.versions.at(-1)?.n)) || a.versions.at(-1);
+              const f = await app.lib.getFile(u, a.id, v.n);
+              let name = f.name, i = 2;
+              while (used.has(name.toLowerCase())) { const dot = name.lastIndexOf("."), base = dot < 0 ? name : name.slice(0, dot), ext = dot < 0 ? "" : name.slice(dot); name = `${base}_${i++}${ext}`; }
+              used.add(name.toLowerCase()); entries.push({ name, data: f.bytes, store: f.format === "lottie" });
+            }
+            download(await writeZip(entries), `${c.name.trim().replace(/[^a-z0-9._-]+/gi, "-") || "group"}.zip`, "application/zip");
+            toast(`Downloaded ${plural(entries.length, "file")}`);
+          } catch (e) { toast(e.message || "Couldn’t download this group", "error"); }
+        } }, icon("download"), "Download ZIP") : null,
         h("button", { class: "btn plain", disabled: !can.ok, title: can.ok ? null : can.reason, onclick: () => editCollection(c) }, "Edit"),
         h("button", { class: "btn plain red", disabled: !can.ok, title: can.ok ? null : can.reason, "aria-label": "Delete " + c.name, onclick: async () => {
-          if (await confirmDialog({ title: `Delete “${c.name}”?`, message: "Assets stay in the library; they’re just removed from this collection.", confirm: "Delete", danger: true })) { await app.lib.deleteCollection(u, c.id); toast("Collection deleted"); await draw(); onChange && onChange(); } } }, icon("trash")));
+          if (await confirmDialog({ title: `Delete “${c.name}”?`, message: "Assets stay in the library; they’re just removed from this group.", confirm: "Delete", danger: true })) { await app.lib.deleteCollection(u, c.id); toast("Group deleted"); await draw(); onChange && onChange(); } } }, icon("trash")));
     });
     body.replaceChildren(rows.length ? h("div", { class: "list" }, rows) : h("p", { class: "muted" }, "There are no collections you can see yet."));
   };
@@ -37,8 +52,8 @@ export async function manageCollections(onChange) {
         try { await app.lib.saveCollection(u, { id: existing?.id, name: name.value, description: desc.value, type: type.value, verticalId: type.value === "company" ? null : vert.value, teamId: type.value === "team" ? team.value : null }); api.close(true); }
         catch (e) { btn.disabled = false; err.textContent = e.message; } } }] });
     name.focus();
-    if (await m.result) { toast("Collection saved"); await draw(); onChange && onChange(); }
+    if (await m.result) { toast("Group saved"); await draw(); onChange && onChange(); }
   }
   await draw();
-  modal({ title: "Collections", subtitle: "Collections group related assets. Approvers curate them within their verticals.", wide: true, body: [body, h("div", { class: "row" }, h("button", { class: "btn tint", type: "button", onclick: () => editCollection(null) }, icon("plus"), "New collection"))], buttons: [{ label: "Done", kind: "fill" }] });
+  modal({ title: "Groups", subtitle: "Groups keep related assets together in your library.", wide: true, body: [body, h("div", { class: "row" }, h("button", { class: "btn tint", type: "button", onclick: () => editCollection(null) }, icon("plus"), "New group"))], buttons: [{ label: "Done", kind: "fill" }] });
 }

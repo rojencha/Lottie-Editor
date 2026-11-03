@@ -3,7 +3,7 @@ import { app, verticalName, teamName, teamsOf } from "../state.js";
 import { h, icon, clear, statusBadge, emptyState, bannerEl, modal, field, confirmDialog, toast, download, mime, fmtBytes, fmtDate, fmtDateTime, fmtDur, ago, plural, popMenu, segmented } from "../ui/dom.js";
 import { go, href } from "../ui/router.js";
 import { mountPlayer, createControls, backgroundControl } from "../ui/player.js";
-import { check, can, inScope, allowedVisibilities, visibleToText, STATUS_LABEL, VISIBILITY_LABEL, ROLE_LABEL } from "../core/policy.js";
+import { check, can, inScope, allowedVisibilities, visibleToText, STATUS_LABEL, VISIBILITY_LABEL } from "../core/policy.js";
 import { currentVersion, PolicyError, NotFoundError, ValidationError } from "../data/library.js";
 import { readAnimationFile } from "../core/convert.js";
 import { LIMITS } from "../core/convert.js";
@@ -18,7 +18,7 @@ export async function render(ctx, view) {
   try { a = await app.lib.getAsset(u, id); }
   catch (e) {
     const denied = e instanceof PolicyError;
-    view.append(h("h1", { class: "large-title", style: { marginBottom: "14px" } }, denied ? "No access" : "Asset not found"), emptyState({ icon: "folder", title: denied ? "You don’t have access to this asset" : "This asset no longer exists", text: denied ? e.message + " Switch the development sign-in to a user with access to try it." : "It may have been removed or the link may be wrong.", actions: [h("a", { class: "btn fill", href: "#/library" }, "Back to library")] }));
+    view.append(h("h1", { class: "large-title", style: { marginBottom: "14px" } }, denied ? "No access" : "Asset not found"), emptyState({ icon: "folder", title: denied ? "You don’t have access to this asset" : "This asset no longer exists", text: denied ? e.message : "It may have been removed or the link may be wrong.", actions: [h("a", { class: "btn fill", href: "#/library" }, "Back to library")] }));
     return;
   }
   const ver = a.versions.find((x) => x.n === +ctx.query.v) || currentVersion(a);
@@ -98,8 +98,8 @@ export async function render(ctx, view) {
   async function editCollections() {
     const cols = (await app.lib.listCollections(u)).filter((c) => check(u, "collection.manage", c).ok);
     const box = h("div", { class: "checks" }, cols.map((c) => h("label", {}, h("input", { type: "checkbox", value: c.id, checked: a.collectionIds.includes(c.id) }), c.name)));
-    const m = modal({ title: "Collections", subtitle: "Choose the collections this asset belongs to.", body: cols.length ? box : h("p", { class: "muted" }, "There are no collections you can manage yet."), buttons: [{ label: "Cancel" }, { label: "Save", kind: "fill", value: true }] });
-    if (await m.result) { const keep = a.collectionIds.filter((c) => !cols.some((x) => x.id === c)); await app.lib.setAssetCollections(u, id, [...keep, ...[...box.querySelectorAll("input:checked")].map((i) => i.value)]); toast("Collections updated"); reload(); }
+    const m = modal({ title: "Groups", subtitle: "Choose the groups this asset belongs to.", body: cols.length ? box : h("p", { class: "muted" }, "There are no groups you can manage yet."), buttons: [{ label: "Cancel" }, { label: "Save", kind: "fill", value: true }] });
+    if (await m.result) { const keep = a.collectionIds.filter((c) => !cols.some((x) => x.id === c)); await app.lib.setAssetCollections(u, id, [...keep, ...[...box.querySelectorAll("input:checked")].map((i) => i.value)]); toast("Groups updated"); reload(); }
   }
   async function uploadVersion() {
     const file = h("input", { type: "file", accept: ".json,.lottie,application/json", class: "input" }), note = h("input", { class: "input", maxLength: 300, placeholder: "What changed?" }), err = h("div", { class: "err-text", role: "alert" });
@@ -120,14 +120,14 @@ export async function render(ctx, view) {
   /* ---- lifecycle panel ---- */
   const life = h("div", { class: "panel pad stack" }, h("dl", { class: "kv", style: { margin: 0 } },
     dd("Asset status", statusBadge(a.status, STATUS_LABEL[a.status])), dd("Approved version", a.approvedVersion != null ? `v${a.approvedVersion}` : "None yet"), dd(`Version ${ver.n}`, statusBadge(ver.status, STATUS_LABEL[ver.status]))),
-    h("p", { class: "help", style: { margin: 0 } }, "New versions always start as drafts. Only an Approver can make a version the approved one, and earlier versions are kept."),
+    h("p", { class: "help", style: { margin: 0 } }, "New versions start as drafts. You can approve a version when it is ready; earlier versions are kept."),
     h("div", { class: "actions" },
       ver.status === "draft" && !a.deprecated ? permBtn(`Submit v${ver.n} for review`, "asset.submit", () => lifecycle("submit", ver.n).then(() => toast("Submitted for review")), { kind: "tint", ic: "check" }) : null,
       ver.status === "in_review" ? permBtn(`Approve v${ver.n}`, "asset.approve", () => approve(ver.n), { kind: "fill", ic: "check" }) : null,
       ver.status === "in_review" ? permBtn("Return to draft", "asset.approve", async () => { await lifecycle("rejectReview", ver.n); toast("Returned to draft"); }) : null,
       !a.deprecated ? permBtn("Upload new version", "asset.addVersion", uploadVersion, { ic: "tray" }) : null,
       permBtn("Visibility…", "asset.editScope", editScope),
-      canManageAnyCollection() ? h("button", { class: "btn gray sm", type: "button", onclick: () => editCollections().catch(fail) }, "Collections…") : null,
+      canManageAnyCollection() ? h("button", { class: "btn gray sm", type: "button", onclick: () => editCollections().catch(fail) }, "Groups…") : null,
       !a.deprecated ? permBtn("Deprecate asset", "asset.deprecate", deprecate, { kind: "gray red" }) : null));
 
   /* ---- details + file info ---- */
@@ -136,7 +136,7 @@ export async function render(ctx, view) {
     dd("Description", a.description || h("span", { class: "muted" }, "No description")), dd("Owner", a.ownerName), dd("Vertical", verticalName(a.vertical)), dd("Team", a.team ? teamName(a.team) : "—"),
     dd("Visible to", `${VISIBILITY_LABEL[a.visibility]} — ${visibleToText(a.visibility, verticalName(a.vertical), a.team ? teamName(a.team) : null)}`),
     dd("Tags", a.tags.length ? h("span", { class: "row", style: { gap: "6px" } }, a.tags.map((t) => h("a", { class: "tag", href: href("/library", { tag: t }) }, t))) : h("span", { class: "muted" }, "None")),
-    dd("Collections", colNames.length ? colNames.join(", ") : h("span", { class: "muted" }, "None")), dd("Created", fmtDate(a.createdAt)), dd("Updated", ago(a.updatedAt)));
+    dd("Groups", colNames.length ? colNames.join(", ") : h("span", { class: "muted" }, "None")), dd("Created", fmtDate(a.createdAt)), dd("Updated", ago(a.updatedAt)));
   const i = ver.info, im = i.images;
   const fileInfo = h("dl", { class: "kv panel", style: { margin: 0 } },
     dd("Format", ver.format === "lottie" ? "dotLottie (.lottie)" : "Lottie JSON (.json)"), dd("File size", fmtBytes(ver.size)), dd("Dimensions", `${i.w} × ${i.h} px`), dd("Frame rate", `${+i.fr.toFixed(2)} fps`),
@@ -166,5 +166,5 @@ export async function render(ctx, view) {
     h("h2", { class: "sec-title" }, `Validation report · version ${ver.n}`), validation,
     h("h2", { class: "sec-title" }, "Version history"), versions,
     h("h2", { class: "sec-title" }, "Activity"), h("div", { class: "panel pad" }, timeline, hist.length > 12 ? h("p", { class: "help" }, `Showing the latest 12 of ${hist.length} events.`) : null),
-    h("p", { class: "help", style: { marginTop: "18px" } }, `Signed in as ${u.name} (${ROLE_LABEL[u.role]}), a simulated development sign-in. Buttons that look unavailable explain why when pressed.`));
+    h("p", { class: "help", style: { marginTop: "18px" } }, "This library is stored in this browser. It is not yet shared across devices or with other people."));
 }

@@ -1,15 +1,14 @@
 // App entry: boot, shell (nav, search, dev sign-in) and routing. Views are loaded on demand.
-import { app, boot, setUser, onUserChange } from "./state.js";
+import { app, boot } from "./state.js";
 import { route, start, go, current, href } from "./ui/router.js";
-import { h, icon, initials, debounce, emptyState, clear } from "./ui/dom.js";
-import { can, ROLE_LABEL } from "./core/policy.js";
+import { h, icon, debounce, emptyState, clear } from "./ui/dom.js";
+import { can } from "./core/policy.js";
 
 const view = document.getElementById("view");
 const NAV = [
   { path: "/library", label: "Library", icon: "grid", match: (p) => p === "/library" || p.startsWith("/asset/") },
   { path: "/converter", label: "Converter", icon: "swap", match: (p) => p === "/converter" },
   { path: "/drafts", label: "My drafts", icon: "doc", match: (p) => p === "/drafts" },
-  { path: "/admin", label: "Administration", icon: "gear", match: (p) => p === "/admin", gate: () => can(app.user, "admin.access") },
 ];
 
 function renderNav(path) {
@@ -20,9 +19,7 @@ function renderNav(path) {
 }
 
 function renderUserbox() {
-  const sel = h("select", { class: "pop", "aria-label": "Sign in as (development only)", onchange: (e) => setUser(e.target.value) },
-    app.users.map((u) => h("option", { value: u.id, selected: u.id === app.user.id }, `${u.name} · ${ROLE_LABEL[u.role]}`)));
-  document.getElementById("userbox").replaceChildren(h("span", { class: "avatar", "aria-hidden": "true" }, initials(app.user.name)), sel);
+  document.getElementById("userbox").replaceChildren(h("span", { class: "workspace-label" }, icon("folder"), "Company workspace"));
 }
 
 function showError(err) {
@@ -32,10 +29,10 @@ function showError(err) {
 
 const VIEWS = {
   library: () => import("./views/library.js"), asset: () => import("./views/asset.js"), converter: () => import("./views/converter.js"),
-  editor: () => import("./views/editor.js"), drafts: () => import("./views/drafts.js"), admin: () => import("./views/admin.js"),
+  editor: () => import("./views/editor.js"), drafts: () => import("./views/drafts.js"),
 };
 const def = (pattern, name, meta) => route(pattern, null, { name, ...meta });
-def("/library", "library"); def("/asset/:id", "asset"); def("/converter", "converter"); def("/drafts", "drafts"); def("/admin", "admin");
+def("/library", "library"); def("/asset/:id", "asset"); def("/converter", "converter"); def("/drafts", "drafts");
 def("/editor/file", "editor", { full: true }); def("/editor/draft/:id", "editor", { full: true }); def("/editor/asset/:id", "editor", { full: true });
 
 async function render(ctx) {
@@ -45,7 +42,6 @@ async function render(ctx) {
   const search = document.getElementById("globalSearch"); if (document.activeElement !== search) search.value = name === "library" ? ctx.query.q || "" : "";
   clear(view);
   try {
-    if (name === "admin" && !can(app.user, "admin.access")) { view.append(emptyState({ icon: "gear", title: "Administration isn’t available", text: "Administration is for Approvers and Administrators. Switch the development sign-in to try it.", actions: [h("a", { class: "btn fill", href: "#/library" }, "Back to library")] })); return; }
     const mod = await VIEWS[name]();
     if (ctx.isStale()) return;
     await mod.render(ctx, view);
@@ -59,11 +55,8 @@ async function render(ctx) {
 (async function init() {
   try { await boot(); } catch (e) { console.error("boot failed:", e && e.message); view.append(emptyState({ icon: "warn", title: "Couldn’t start", text: "The library couldn’t be opened in this browser.", actions: [h("button", { class: "btn fill", onclick: () => location.reload() }, "Try again")] })); return; }
   renderUserbox();
-  document.getElementById("devbar").hidden = false;
-  if (!app.store.persistent) document.getElementById("devbar").append(h("span", {}, " Browser storage is unavailable, so changes last only until you close this tab."));
   const searchGo = debounce((q) => go("/library", { ...(current().path === "/library" ? current().query : {}), q: q.trim() || undefined }), 250);
   document.getElementById("globalSearch").addEventListener("input", (e) => searchGo(e.target.value));
   document.getElementById("searchForm").addEventListener("submit", (e) => { e.preventDefault(); searchGo.cancel(); go("/library", { q: document.getElementById("globalSearch").value.trim() || undefined }); });
-  onUserChange(() => { renderUserbox(); go(current().path, current().query, { replace: true }); });
   start(render);
 })();

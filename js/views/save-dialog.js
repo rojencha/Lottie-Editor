@@ -5,7 +5,7 @@ import { inspect, PolicyError, ValidationError } from "../data/library.js";
 import { allowedVisibilities, inScope, visibleToText, VISIBILITY_LABEL, check } from "../core/policy.js";
 import { stem } from "../core/convert.js";
 
-export const saveBlockReason = () => app.user.role === "viewer" ? "Viewers can’t save to the library. Switch to a Contributor in the development sign-in, or ask one to save it." : null;
+export const saveBlockReason = () => app.user.role === "viewer" ? "Saving is unavailable for this account." : null;
 
 const VIS_HELP = { company: "Everyone signed in", vertical: "Members of the vertical", team: "Members of the team (and the vertical’s Approvers)" };
 
@@ -48,17 +48,17 @@ export async function saveToLibraryDialog({ name, bytes, source = null, note = "
   const disclosure = h("div", { class: "disclose", role: "note" },
     h("b", {}, "What happens when you save"),
     h("ul", {},
-      h("li", {}, `This file (${fmtBytes(bytes.length)}, .${ins.format === "lottie" ? "lottie" : "json"}${img.embedded ? `, ${plural(img.embedded, "embedded image")}` : ""}) and the details above are stored in the library.`),
-      h("li", {}, "Visible to ", who, "."),
-      h("li", {}, app.lib.persistent ? "In this development build the library is kept in this browser’s local database, not on a server." : "Browser storage is unavailable, so this development library lasts only while this tab is open."),
-      h("li", {}, "Nothing is uploaded until you press Save to library. It’s saved as a Draft; an Approver must approve it.")),
+      h("li", {}, `This file (${fmtBytes(bytes.length)}, .${ins.format === "lottie" ? "lottie" : "json"}${img.embedded ? `, ${plural(img.embedded, "embedded image")}` : ""}) and the details above are stored in this browser’s library.`),
+      h("li", {}, "Intended audience: ", who, "."),
+      h("li", {}, app.lib.persistent ? "This MVP keeps the library in this browser’s local database. Other devices and people cannot access it yet." : "Browser storage is unavailable, so this development library lasts only while this tab is open."),
+      h("li", {}, "Nothing is uploaded to a server. It’s saved as a draft; you can approve it when it’s ready.")),
     h("p", { style: { margin: "8px 0 0" } }, c.error || c.warning ? `Validation found ${plural(c.error, "error")} and ${plural(c.warning, "warning")}. You can review them on the asset page.` : "No validation errors or warnings were found."));
 
   const m = modal({
-    title: "Save to library", subtitle: "Add this animation to the shared company library.", wide: true,
+    title: "Save to library", subtitle: "Add this animation to your library on this device.", wide: true,
     body: [field("Name", nameIn), field("Description", desc), field("Tags", tags, "Separate with commas."),
       h("div", { class: "row", style: { alignItems: "start" } }, h("div", { class: "grow" }, field("Vertical", vSel)), h("div", { class: "grow" }, field("Team", tSel))),
-      field("Who can see it", visSel), collections.length ? h("div", { class: "field" }, h("div", { class: "lbl" }, "Collections"), colBox) : null, field("Version note", noteIn), disclosure, err],
+      field("Intended audience", visSel, "This setting is organizational metadata; sharing is not enabled in this browser-only version."), collections.length ? h("div", { class: "field" }, h("div", { class: "lbl" }, "Groups"), colBox) : null, field("Version note", noteIn), disclosure, err],
     buttons: [{ label: "Cancel", value: null }, { label: "Save to library", kind: "fill", close: false, onClick: async (api, btn) => {
       err.textContent = ""; btn.disabled = true;
       try {
