@@ -2,139 +2,358 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <title>Lottie Converter</title>
 <style>
-  :root{--bg:#0f1115;--card:#171a21;--line:#2a2f3a;--fg:#e8eaf0;--mut:#8b93a5;--acc:#6c8cff;--ok:#4ade80;--err:#f87171}
-  @media (prefers-color-scheme:light){:root{--bg:#f5f6f9;--card:#fff;--line:#dde1ea;--fg:#171a21;--mut:#5d6578;--acc:#3b5bdb;--ok:#15803d;--err:#b91c1c}}
-  *{box-sizing:border-box}
-  [hidden]{display:none!important}
-  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-  main{max-width:860px;margin:0 auto;padding:32px 16px 64px}
-  h1{font-size:22px;margin:0 0 4px} p.sub{margin:0 0 24px;color:var(--mut)}
-  #drop{border:2px dashed var(--line);border-radius:14px;padding:40px 16px;text-align:center;background:var(--card);cursor:pointer;transition:.15s}
-  #drop.over{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 8%,var(--card))}
-  #drop b{display:block;font-size:17px;margin-bottom:4px} #drop span{color:var(--mut)}
-  .opts{display:flex;flex-wrap:wrap;gap:16px;margin:16px 0;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px}
-  .opts label{display:flex;align-items:center;gap:6px;color:var(--mut);font-size:14px}
-  select,input[type=number]{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
-  .item{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-top:8px;background:var(--card);border:1px solid var(--line);border-radius:12px}
-  .item .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .item .m{color:var(--mut);font-size:13px}
-  .item.err .m{color:var(--err)} .item.ok .m{color:var(--ok)}
-  button,a.btn{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:7px 14px;font:inherit;cursor:pointer;text-decoration:none;display:inline-block}
-  button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
-  .row{display:flex;gap:8px;margin-top:14px}
-  footer{margin-top:28px;color:var(--mut);font-size:13px}
-  /* ---- editor ---- */
-  .row2{display:flex;gap:8px;align-items:center;margin-top:12px}
-  #editor{position:fixed;inset:0;z-index:20;background:var(--bg);overflow:auto}
-  .ed-top{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line)}
-  .ed-top .sp{flex:1}
-  .ed-body{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;padding:16px;max-width:1300px;margin:0 auto}
-  @media (max-width:900px){.ed-body{grid-template-columns:1fr}}
-  .ed-prev{position:sticky;top:64px;align-self:start}
-  @media (max-width:900px){.ed-prev{position:static}}
-  #stage{width:100%;max-height:62vh;border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;
-    background-color:#fff;background-image:linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%),linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%);background-size:16px 16px;background-position:0 0,8px 8px}
-  #stage svg{max-height:62vh}
-  #stageMsg{padding:24px;text-align:center;color:var(--mut)}
-  .ctl{display:flex;gap:10px;align-items:center;margin-top:10px;color:var(--mut);font-size:13px;flex-wrap:wrap}
-  .ctl input[type=range]{flex:1;min-width:120px}
-  .ed-side details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
-  .ed-side summary{cursor:pointer;padding:11px 14px;font-weight:600}
-  .ed-side .pad{padding:2px 14px 14px;display:grid;gap:10px}
-  .f{display:grid;grid-template-columns:96px 1fr 52px;gap:8px;align-items:center;font-size:13px;color:var(--mut)}
-  .f .v{text-align:right;color:var(--fg);font-variant-numeric:tabular-nums}
-  .f2{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--mut)}
-  .f2 input[type=number]{width:78px}
-  .sw{display:flex;align-items:center;gap:8px;font-size:13px}
-  .sw input[type=color]{width:34px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer}
-  .sw code{color:var(--fg)} .sw .c{color:var(--mut);flex:1}
-  .sw button,.ly button{padding:2px 8px;font-size:12px}
-  .ly{display:flex;align-items:center;gap:6px;font-size:13px}
-  .ly input[type=text]{flex:1;min-width:0;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
-  .ly .t{color:var(--mut);width:48px;font-size:11px;text-transform:uppercase}
-  .ly.del{opacity:.45;text-decoration:line-through}
-  textarea#json{width:100%;height:220px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;font:12px/1.4 ui-monospace,Menlo,monospace;padding:8px}
-  #stats{margin-left:auto}
+/* ===== Foundations: system colors, materials, type — after Apple's Human Interface Guidelines ===== */
+:root{
+  color-scheme:light dark;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",system-ui,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;
+  --bg:#f2f2f7;--bg2:#fff;
+  --l1:#000;--l2:rgba(60,60,67,.6);--l3:rgba(60,60,67,.3);--sep:rgba(60,60,67,.2);
+  --f1:rgba(120,120,128,.2);--f2:rgba(120,120,128,.16);--f3:rgba(120,120,128,.12);
+  --tint:#007aff;--tint-bg:rgba(0,122,255,.12);--red:#ff3b30;--green:#34c759;--orange:#ff9500;
+  --mat:rgba(249,249,249,.82);--menu:rgba(255,255,255,.98);--seg-on:#fff;
+  --shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);
+  --chk1:#fff;--chk2:#e9e9ee;
+  --ease:cubic-bezier(.32,.72,0,1);
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#000;--bg2:#1c1c1e;
+  --l1:#fff;--l2:rgba(235,235,245,.6);--l3:rgba(235,235,245,.3);--sep:rgba(84,84,88,.65);
+  --f1:rgba(120,120,128,.36);--f2:rgba(120,120,128,.32);--f3:rgba(120,120,128,.24);
+  --tint:#0a84ff;--tint-bg:rgba(10,132,255,.2);--red:#ff453a;--green:#30d158;--orange:#ff9f0a;
+  --mat:rgba(30,30,32,.8);--menu:rgba(44,44,46,.98);--seg-on:#636366;
+  --shadow:0 3px 8px rgba(0,0,0,.4),0 3px 1px rgba(0,0,0,.2);
+  --chk1:#2c2c2e;--chk2:#1c1c1e;
+}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--l1);font:15px/1.4 var(--font);-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+svg.i{width:1.2em;height:1.2em;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+:focus{outline:none}
+:focus-visible{outline:3px solid color-mix(in srgb,var(--tint) 50%,transparent);outline-offset:2px;border-radius:8px}
+
+/* ===== Buttons (filled / tinted / plain — HIG button styles) ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:34px;padding:0 16px;border-radius:999px;font-weight:600;font-size:15px;text-decoration:none;color:var(--tint);transition:opacity .15s,background .2s,transform .2s var(--ease);white-space:nowrap}
+.btn:active{opacity:.55;transform:scale(.97)}
+.btn.fill{background:var(--tint);color:#fff}
+.btn.tint{background:var(--tint-bg)}
+.btn.plain{padding:0 8px;min-height:30px}
+.btn.red{color:var(--red)}
+.icon-btn{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--f2);color:var(--l1);transition:opacity .15s,background .2s,transform .2s var(--ease)}
+.icon-btn:active{opacity:.55;transform:scale(.94)}
+.icon-btn:disabled,.btn:disabled{opacity:.3;pointer-events:none}
+.icon-btn svg.i{width:18px;height:18px}
+
+/* ===== Navigation bar with large title ===== */
+.nav{position:sticky;top:0;z-index:5;height:52px;display:flex;align-items:center;justify-content:flex-end;padding:0 max(16px,calc((100vw - 680px)/2 + 16px));border-bottom:.5px solid transparent;transition:background .25s,border-color .25s;-webkit-backdrop-filter:blur(0);backdrop-filter:blur(0)}
+.nav.scrolled{background:var(--mat);-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);border-bottom-color:var(--sep)}
+.nav-title{position:absolute;left:50%;transform:translateX(-50%);font-weight:600;font-size:17px;opacity:0;transition:opacity .2s;pointer-events:none}
+.nav.scrolled .nav-title{opacity:1}
+main{max-width:680px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left)) 56px}
+.large-title{font-size:34px;line-height:1.12;font-weight:700;letter-spacing:.012em;margin:2px 0 6px}
+.lede{margin:0;color:var(--l2);font-size:17px;line-height:1.35;letter-spacing:-.022em}
+
+/* ===== Drop target (empty-state pattern) ===== */
+.drop{margin-top:24px;background:var(--bg2);border-radius:20px;padding:36px 20px 30px;text-align:center;border:1.5px dashed var(--l3);cursor:pointer;transition:border-color .2s,background .2s,transform .35s var(--ease)}
+.drop.over{border-color:var(--tint);background:var(--tint-bg);transform:scale(1.015)}
+.drop .ico{width:68px;height:68px;border-radius:18px;margin:0 auto 16px;display:grid;place-items:center;background:var(--tint-bg);color:var(--tint)}
+.drop .ico svg.i{width:32px;height:32px;stroke-width:1.6}
+.drop h2{font-size:22px;line-height:1.2;font-weight:600;margin:0 0 4px;letter-spacing:.01em}
+.drop p{margin:0 0 20px;color:var(--l2);font-size:15px}
+
+/* ===== Inset grouped lists ===== */
+.sh{margin:30px 16px 7px;font-size:13px;line-height:1.2;color:var(--l2);text-transform:uppercase;letter-spacing:-.003em;display:flex;align-items:center;justify-content:space-between;min-height:30px}
+.sh .btn{text-transform:none;font-size:15px}
+.sh .acts{display:flex;gap:2px}
+.sf{margin:8px 16px 0;font-size:13px;line-height:1.35;color:var(--l2)}
+.list{background:var(--bg2);border-radius:12px;overflow:hidden}
+.cell{position:relative;display:flex;align-items:center;gap:12px;min-height:44px;padding:9px 16px}
+.cell+.cell::before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--sep)}
+.cell.col{flex-direction:column;align-items:stretch;gap:6px;padding:12px 16px 8px}
+.cell .grow{flex:1;min-width:0}
+.cell .t{font-size:15px;line-height:1.3}
+.cell .s{font-size:12.5px;line-height:1.3;color:var(--l2);margin-top:1px}
+label.cell{cursor:pointer}
+.r{display:flex;align-items:center;gap:8px}
+.v{color:var(--l2);font-variant-numeric:tabular-nums}
+.muted{color:var(--l2)}
+.file .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file.err .s{color:var(--red)}
+.tile{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:#fff;flex:none}
+.tile svg.i{width:19px;height:19px}
+.tile.json{background:var(--orange)}.tile.lottie{background:var(--tint)}.tile.err{background:var(--red)}
+
+/* ===== Controls ===== */
+input[type=checkbox]{-webkit-appearance:none;appearance:none;flex:none;width:44px;height:26px;border-radius:13px;background:var(--f1);position:relative;cursor:pointer;margin:0;transition:background .3s var(--ease)}
+input[type=checkbox]::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.28);transition:transform .3s var(--ease)}
+input[type=checkbox]:checked{background:var(--green)}
+input[type=checkbox]:checked::after{transform:translateX(18px)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:none;margin:0;cursor:pointer;--a:0%;--b:0%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--f1) 0 var(--a),var(--tint) var(--a) var(--b),var(--f1) var(--b) 100%)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-11px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3),0 0 0 .5px rgba(0,0,0,.08)}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--f1) 0 var(--a),var(--tint) var(--a) var(--b),var(--f1) var(--b) 100%)}
+input[type=range]::-moz-range-thumb{width:26px;height:26px;border:0;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+input[type=color]{-webkit-appearance:none;appearance:none;flex:none;width:30px;height:30px;padding:0;border:0;border-radius:50%;background:none;cursor:pointer;box-shadow:0 0 0 2px var(--bg2),0 0 0 3.5px var(--l3)}
+input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+input[type=color]::-webkit-color-swatch{border:0;border-radius:50%}
+input[type=color]::-moz-color-swatch{border:0;border-radius:50%}
+.fld{width:88px;text-align:right;background:var(--f3);border:0;border-radius:8px;padding:6px 10px;color:var(--l1);font:inherit;font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.fld::-webkit-outer-spin-button,.fld::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.fld::placeholder{color:var(--l3)}
+.fld.plain{background:none;text-align:left;padding:6px 0;width:100%}
+.unit{color:var(--l2);font-size:13px;width:16px}
+.pop{-webkit-appearance:none;appearance:none;background:var(--f2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 9px center;border:0;border-radius:8px;padding:4px 26px 4px 10px;font:inherit;font-size:13px;font-weight:500;color:var(--l1);max-width:46vw}
+.seg{display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--f2);border-radius:9px;padding:2px}
+.seg.full{display:grid;width:100%}
+.list .cell:only-child>.seg{display:grid;width:100%}
+.seg button{min-height:28px;padding:0 10px;border-radius:7px;font-size:13px;font-weight:500;white-space:nowrap;transition:background .25s var(--ease),box-shadow .25s}
+.seg [aria-checked=true],.seg [aria-selected=true]{background:var(--seg-on);box-shadow:var(--shadow);font-weight:600}
+textarea.code{width:100%;height:230px;resize:vertical;background:none;border:0;color:var(--l1);font:12px/1.5 var(--mono);padding:4px 0;letter-spacing:0}
+.well-hex{font-family:var(--mono);font-size:13px;letter-spacing:0}
+
+footer{margin-top:40px;text-align:center;color:var(--l2);font-size:13px;line-height:1.4}
+
+/* ===== Editor: full-screen sheet ===== */
+#editor{position:fixed;inset:0;z-index:20;background:var(--bg);overflow:auto;overscroll-behavior:contain}
+#editor:not([hidden]){animation:sheetIn .5s var(--ease)}
+#editor.closing{animation:sheetOut .28s var(--ease) forwards}
+@keyframes sheetIn{from{transform:translateY(5%);opacity:0}to{transform:none;opacity:1}}
+@keyframes sheetOut{to{transform:translateY(5%);opacity:0}}
+@keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
+.tb{position:sticky;top:0;z-index:4;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:10px max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));background:var(--mat);-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);border-bottom:.5px solid var(--sep)}
+.tb>:first-child{justify-self:start}
+.tb-title{text-align:center;min-width:0;display:grid;justify-items:center;gap:2px}
+.tb-title .t{font-weight:600;font-size:15px;max-width:34vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-actions{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+.tb-actions .group{display:flex;gap:6px}
+.menu-wrap{position:relative}
+.menu{position:absolute;right:0;top:calc(100% + 8px);width:236px;background:var(--menu);border-radius:14px;padding:6px;box-shadow:0 12px 40px rgba(0,0,0,.28),0 0 0 .5px var(--sep);transform-origin:top right;animation:popIn .22s var(--ease);z-index:6}
+.mi{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:10px 12px;border-radius:8px;font-size:15px;text-align:left}
+.mi:hover,.mi:focus-visible{background:var(--f3)}
+.mi svg.i{width:18px;height:18px;color:var(--l2)}
+.mi.red,.mi.red svg.i{color:var(--red)}
+.menu hr{border:0;height:.5px;background:var(--sep);margin:6px 8px}
+.ed-body{display:grid;grid-template-columns:minmax(0,1fr) 392px;gap:28px;padding:22px max(24px,env(safe-area-inset-right)) 48px max(24px,env(safe-area-inset-left));max-width:1360px;margin:0 auto}
+.ed-prev{position:sticky;top:84px;align-self:start}
+.canvas{border-radius:18px;overflow:hidden;background:var(--bg2);box-shadow:0 0 0 .5px var(--sep)}
+#stage{width:100%;min-height:200px;max-height:60vh;display:flex;align-items:center;justify-content:center;background-color:var(--chk1);
+  background-image:linear-gradient(45deg,var(--chk2) 25%,transparent 25%,transparent 75%,var(--chk2) 75%),linear-gradient(45deg,var(--chk2) 25%,transparent 25%,transparent 75%,var(--chk2) 75%);background-size:18px 18px;background-position:0 0,9px 9px}
+#stage svg{max-height:60vh}
+#stageMsg{padding:28px;text-align:center;color:var(--l2);max-width:360px}
+.player{display:flex;align-items:center;gap:12px;margin-top:14px;padding:6px 16px 6px 6px;background:var(--bg2);border-radius:999px;box-shadow:0 0 0 .5px var(--sep)}
+.play-btn{width:40px;height:40px;border-radius:50%;background:var(--tint);color:#fff;display:grid;place-items:center;flex:none;transition:transform .2s var(--ease),opacity .15s}
+.play-btn:active{transform:scale(.92);opacity:.8}
+.play-btn svg.i{width:18px;height:18px;fill:currentColor;stroke:none}
+#frameInfo{min-width:70px;text-align:right;font-size:13px;color:var(--l2);font-variant-numeric:tabular-nums}
+.pv-opts{display:flex;align-items:center;gap:14px;margin-top:14px;flex-wrap:wrap}
+.pv-opts .lp{display:flex;align-items:center;gap:8px;color:var(--l2);font-size:13px}
+#stats{margin-left:auto;font-size:13px;color:var(--l2);font-variant-numeric:tabular-nums}
+.ed-side .seg{margin-bottom:4px}
+.ed-side section>.sh:first-child{margin-top:20px}
+.ly .ty{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--l2);width:50px;flex:none}
+.ly.del .fld,.ly.del .ty{opacity:.4;text-decoration:line-through}
+.sw code{font-family:var(--mono);font-size:13px;letter-spacing:0}
+.sw .c{color:var(--l2);font-size:13px;margin-left:auto}
+#toast{position:fixed;left:50%;bottom:max(28px,env(safe-area-inset-bottom));transform:translate(-50%,0);z-index:40;padding:11px 18px;border-radius:999px;background:var(--mat);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);box-shadow:0 8px 30px rgba(0,0,0,.25),0 0 0 .5px var(--sep);font-weight:500;font-size:15px;animation:popIn .25s var(--ease)}
+@media (max-width:920px){
+  .ed-body{grid-template-columns:1fr;gap:8px;padding:14px 16px 40px}
+  .ed-prev{position:static}
+  .tb-title .t{max-width:30vw}
+}
+@media (max-width:520px){
+  .large-title{font-size:30px}
+  .tb{gap:6px}
+  .tb-actions{gap:6px}
+}
+@media (pointer:coarse){.icon-btn{width:44px;height:44px}.btn{min-height:44px}.btn.plain{min-height:40px}.seg button{min-height:36px}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
-<main>
-  <h1>Lottie Converter</h1>
-  <p class="sub">dotLottie (.lottie) &harr; Lottie JSON (.json). Runs entirely in your browser &mdash; files never leave your device.</p>
 
-  <div id="drop" tabindex="0"><b>Drop files here or click to choose</b><span>.lottie and .json, multiple files allowed. Several JSONs can be bundled into one .lottie.</span></div>
-  <input id="file" type="file" multiple accept=".lottie,.json,application/json" hidden>
-  <div class="row2"><button id="openEd" class="ghost">Open a file in the editor&hellip;</button><span style="color:var(--mut);font-size:13px">Edit colors, size, timing and layers with a live preview. You can also click Edit on any converted file.</span></div>
+<!-- SF Symbols–style icon set -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-xmark" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.2v13.6a.6.6 0 0 0 .9.5l11-6.8a.6.6 0 0 0 0-1L8.9 4.7a.6.6 0 0 0-.9.5z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="5" width="4.2" height="14" rx="1.2" fill="currentColor" stroke="none"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M8 7l4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 11l4 4 4-4"/><path d="M5 20h14"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4v5h5"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4.5h6V7"/><path d="M6 7l1 12.5h10L18 7"/></symbol>
+  <symbol id="i-braces" viewBox="0 0 24 24"><path d="M9 4C7 4 6 5 6 7v2c0 1-1 2-2 3 1 1 2 2 2 3v2c0 2 1 3 3 3"/><path d="M15 4c2 0 3 1 3 3v2c0 1 1 2 2 3-1 1-2 2-2 3v2c0 2-1 3-3 3"/></symbol>
+  <symbol id="i-tray" viewBox="0 0 24 24"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.4v.1"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+</svg>
+
+<header class="nav" id="nav">
+  <span class="nav-title">Lottie Converter</span>
+  <button class="btn tint" id="openEd"><svg class="i"><use href="#i-sliders"/></svg>Open Editor</button>
   <input id="edFile" type="file" accept=".lottie,.json,application/json" hidden>
+</header>
 
-  <div class="opts">
-    <label>dotLottie version
-      <select id="ver"><option value="1">1 (widest support)</option><option value="2">2</option></select></label>
-    <label><input type="checkbox" id="inline" checked> Inline images when making JSON</label>
-    <label><input type="checkbox" id="extract" checked> Extract images into .lottie</label>
-    <label><input type="checkbox" id="pretty"> Pretty-print JSON</label>
-    <label><input type="checkbox" id="bundle"> Bundle all JSONs into one .lottie</label>
+<main>
+  <h1 class="large-title" id="largeTitle">Lottie Converter</h1>
+  <p class="lede">Convert between dotLottie and Lottie JSON, then fine-tune colors, size and timing.</p>
+
+  <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose or drop Lottie files">
+    <div class="ico"><svg class="i"><use href="#i-tray"/></svg></div>
+    <h2>Drop Lottie Files</h2>
+    <p>.lottie and .json &middot; several files at once</p>
+    <button class="btn fill" type="button" tabindex="-1">Choose Files</button>
   </div>
+  <input id="file" type="file" multiple accept=".lottie,.json,application/json" hidden>
 
-  <div id="list"></div>
-  <div class="row" id="actions" hidden><button id="zipAll" class="ghost">Download all as .zip</button><button id="clear" class="ghost">Clear</button></div>
-  <footer>Validates Lottie structure, handles multi-animation files, external and embedded image assets, and tolerant manifests.</footer>
+  <section id="actions" hidden>
+    <div class="sh"><span>Converted</span>
+      <span class="acts"><button class="btn plain" id="zipAll">Save All</button><button class="btn plain red" id="clear">Clear</button></span></div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <div class="sh">Options</div>
+  <div class="list">
+    <div class="cell"><div class="grow"><div class="t">dotLottie version</div><div class="s">Version 1 has the widest player support.</div></div>
+      <select id="ver" data-seg aria-label="dotLottie version"><option value="1">v1</option><option value="2">v2</option></select></div>
+    <label class="cell"><div class="grow"><div class="t">Embed images in JSON</div><div class="s">Makes .json files fully self-contained.</div></div><input type="checkbox" id="inline" checked></label>
+    <label class="cell"><div class="grow"><div class="t">Extract images into .lottie</div><div class="s">Stores each image once for smaller files.</div></div><input type="checkbox" id="extract" checked></label>
+    <label class="cell"><div class="grow"><div class="t">Pretty-print JSON</div><div class="s">Readable indentation instead of minified.</div></div><input type="checkbox" id="pretty"></label>
+    <label class="cell"><div class="grow"><div class="t">Bundle into one .lottie</div><div class="s">Combine several JSON files into a single dotLottie.</div></div><input type="checkbox" id="bundle"></label>
+  </div>
+  <div class="sf">Files are validated before conversion. Multi-animation files are split into separate JSON files.</div>
+
+  <footer>Everything runs in your browser. Your files never leave this device.</footer>
 </main>
 
-<div id="editor" hidden>
-  <div class="ed-top">
-    <b id="edTitle">Editor</b>
-    <select id="edAnim" hidden title="Animation in this file"></select>
-    <span class="sp"></span>
-    <button class="ghost" id="edUndo">Undo</button><button class="ghost" id="edRedo">Redo</button><button class="ghost" id="edReset">Reset</button>
-    <button class="ghost" id="edCopy">Copy JSON</button>
-    <button id="edJson">Download .json</button><button id="edLottie">Download .lottie</button>
-    <button class="ghost" id="edClose">Close</button>
+<!-- ===== Editor sheet ===== -->
+<div id="editor" hidden role="dialog" aria-modal="true" aria-labelledby="edTitle">
+  <div class="tb">
+    <button class="icon-btn" id="edClose" aria-label="Close editor"><svg class="i"><use href="#i-xmark"/></svg></button>
+    <div class="tb-title"><div class="t" id="edTitle">Editor</div><select id="edAnim" class="pop" hidden aria-label="Animation in this file"></select></div>
+    <div class="tb-actions">
+      <div class="group">
+        <button class="icon-btn" id="edUndo" aria-label="Undo" title="Undo (⌘Z)"><svg class="i"><use href="#i-undo"/></svg></button>
+        <button class="icon-btn" id="edRedo" aria-label="Redo" title="Redo (⇧⌘Z)"><svg class="i"><use href="#i-redo"/></svg></button>
+      </div>
+      <div class="menu-wrap">
+        <button class="btn fill" id="exportBtn" aria-haspopup="menu" aria-expanded="false"><svg class="i"><use href="#i-share"/></svg>Export</button>
+        <div class="menu" id="exportMenu" role="menu" hidden>
+          <button class="mi" id="edJson" role="menuitem">Download .json<svg class="i"><use href="#i-download"/></svg></button>
+          <button class="mi" id="edLottie" role="menuitem">Download .lottie<svg class="i"><use href="#i-download"/></svg></button>
+          <button class="mi" id="edCopy" role="menuitem">Copy JSON<svg class="i"><use href="#i-copy"/></svg></button>
+          <hr>
+          <button class="mi red" id="edReset" role="menuitem">Reset All Edits<svg class="i"><use href="#i-reset"/></svg></button>
+        </div>
+      </div>
+    </div>
   </div>
+
   <div class="ed-body">
     <div class="ed-prev">
-      <div id="stage"></div>
-      <div class="ctl"><button id="play">Pause</button><input type="range" id="scrub" min="0" max="100" value="0" step="1"><span id="frameInfo"></span></div>
-      <div class="ctl">
-        <label><input type="checkbox" id="loop" checked> Loop</label>
-        <label>Preview background <select id="pbg"><option value="checker">Checkerboard</option><option value="#ffffff">White</option><option value="#111418">Dark</option></select></label>
+      <div class="canvas"><div id="stage"></div></div>
+      <div class="player">
+        <button class="play-btn" id="play" aria-label="Pause"><svg class="i"><use href="#i-pause"/></svg></button>
+        <input type="range" id="scrub" min="0" max="100" value="0" step="1" aria-label="Timeline">
+        <span id="frameInfo"></span>
+      </div>
+      <div class="pv-opts">
+        <select id="pbg" data-seg aria-label="Preview background"><option value="checker">Checker</option><option value="#ffffff">White</option><option value="#111418">Dark</option></select>
+        <label class="lp">Loop <input type="checkbox" id="loop" checked></label>
         <span id="stats"></span>
       </div>
     </div>
+
     <div class="ed-side">
-      <details open><summary>Colors</summary><div class="pad">
-        <div id="swatches"></div>
-        <div class="f"><span>Hue</span><input type="range" id="hue" min="-180" max="180" value="0"><span class="v" id="hueV">0</span></div>
-        <div class="f"><span>Saturation</span><input type="range" id="sat" min="-100" max="100" value="0"><span class="v" id="satV">0</span></div>
-        <div class="f"><span>Brightness</span><input type="range" id="light" min="-100" max="100" value="0"><span class="v" id="lightV">0</span></div>
-        <div class="f2"><label><input type="checkbox" id="invert"> Invert</label><label><input type="checkbox" id="gray"> Grayscale</label></div>
-        <div style="font-size:12px;color:var(--mut)">Swatches show the original palette. Sliders adjust the whole animation on top of any swatch changes.</div>
-      </div></details>
-      <details open><summary>Size &amp; transform</summary><div class="pad">
-        <div class="f2">Canvas <input type="number" id="w" min="1" placeholder="width"> &times; <input type="number" id="h" min="1" placeholder="height"> <label><input type="checkbox" id="lock" checked> Lock ratio</label></div>
-        <div class="f2">Content <select id="fit"><option value="contain">Fit inside</option><option value="cover">Fill (crop)</option><option value="stretch">Stretch</option><option value="keep">Keep size, centered</option></select></div>
-        <div class="f"><span>Scale</span><input type="range" id="scale" min="10" max="300" value="100"><span class="v" id="scaleV">100%</span></div>
-        <div class="f"><span>Rotate</span><input type="range" id="rot" min="-180" max="180" value="0"><span class="v" id="rotV">0&deg;</span></div>
-        <div class="f2"><label><input type="checkbox" id="flipH"> Flip horizontal</label><label><input type="checkbox" id="flipV"> Flip vertical</label></div>
-      </div></details>
-      <details open><summary>Timing</summary><div class="pad">
-        <div class="f"><span>Speed</span><input type="range" id="speed" min="10" max="400" value="100"><span class="v" id="speedV">100%</span></div>
-        <div class="f2">Trim frames <input type="number" id="start" step="1" placeholder="start"> to <input type="number" id="end" step="1" placeholder="end"></div>
-      </div></details>
-      <details open><summary>Appearance</summary><div class="pad">
-        <div class="f"><span>Stroke width</span><input type="range" id="stroke" min="0" max="400" value="100"><span class="v" id="strokeV">100%</span></div>
-        <div class="f"><span>Opacity</span><input type="range" id="opacity" min="0" max="100" value="100"><span class="v" id="opacityV">100%</span></div>
-        <div class="f2"><label><input type="checkbox" id="bgOn"> Background color</label><input type="color" id="bg" value="#ffffff"></div>
-      </div></details>
-      <details><summary>Layers</summary><div class="pad" id="layers"></div></details>
-      <details id="jsonBox"><summary>Raw JSON</summary><div class="pad">
-        <div style="font-size:12px;color:var(--mut)">View the current result, edit by hand, then apply it as the new starting point (slider edits reset).</div>
-        <textarea id="json" spellcheck="false"></textarea>
-        <div class="f2"><button class="ghost" id="jsonLoad">Load current JSON</button><button id="jsonApply">Apply</button><span id="jsonMsg"></span></div>
-      </div></details>
+      <div class="seg full" id="tabs" role="tablist" aria-label="Inspector">
+        <button role="tab" data-tab="color" aria-selected="true">Color</button>
+        <button role="tab" data-tab="size" aria-selected="false">Size</button>
+        <button role="tab" data-tab="time" aria-selected="false">Time</button>
+        <button role="tab" data-tab="style" aria-selected="false">Style</button>
+        <button role="tab" data-tab="layers" aria-selected="false">Layers</button>
+        <button role="tab" data-tab="json" aria-selected="false">JSON</button>
+      </div>
+
+      <section data-pane="color" role="tabpanel">
+        <div class="sh">Palette</div>
+        <div class="list" id="swatches"></div>
+        <div class="sf">Swatches show the original colors. Sliders below adjust the whole animation on top.</div>
+        <div class="sh">Adjust</div>
+        <div class="list">
+          <div class="cell col"><div class="r"><span class="grow">Hue</span><span class="v" id="hueV">0</span></div><input type="range" id="hue" min="-180" max="180" value="0" aria-label="Hue"></div>
+          <div class="cell col"><div class="r"><span class="grow">Saturation</span><span class="v" id="satV">0</span></div><input type="range" id="sat" min="-100" max="100" value="0" aria-label="Saturation"></div>
+          <div class="cell col"><div class="r"><span class="grow">Brightness</span><span class="v" id="lightV">0</span></div><input type="range" id="light" min="-100" max="100" value="0" aria-label="Brightness"></div>
+          <label class="cell"><span class="grow t">Invert</span><input type="checkbox" id="invert"></label>
+          <label class="cell"><span class="grow t">Grayscale</span><input type="checkbox" id="gray"></label>
+        </div>
+      </section>
+
+      <section data-pane="size" role="tabpanel" hidden>
+        <div class="sh">Canvas</div>
+        <div class="list">
+          <div class="cell"><label class="grow t" for="w">Width</label><input type="number" id="w" class="fld" min="1" inputmode="numeric"><span class="unit">px</span></div>
+          <div class="cell"><label class="grow t" for="h">Height</label><input type="number" id="h" class="fld" min="1" inputmode="numeric"><span class="unit">px</span></div>
+          <label class="cell"><span class="grow t">Lock aspect ratio</span><input type="checkbox" id="lock" checked></label>
+        </div>
+        <div class="sh">Content</div>
+        <div class="list"><div class="cell"><select id="fit" data-seg aria-label="Content fit"><option value="contain">Fit</option><option value="cover">Fill</option><option value="stretch">Stretch</option><option value="keep">Center</option></select></div></div>
+        <div class="sf">Fit scales inside the canvas, Fill crops to cover it, Center keeps the original size.</div>
+        <div class="sh">Transform</div>
+        <div class="list">
+          <div class="cell col"><div class="r"><span class="grow">Scale</span><span class="v" id="scaleV">100%</span></div><input type="range" id="scale" min="10" max="300" value="100" aria-label="Scale"></div>
+          <div class="cell col"><div class="r"><span class="grow">Rotate</span><span class="v" id="rotV">0°</span></div><input type="range" id="rot" min="-180" max="180" value="0" aria-label="Rotation"></div>
+          <label class="cell"><span class="grow t">Flip horizontal</span><input type="checkbox" id="flipH"></label>
+          <label class="cell"><span class="grow t">Flip vertical</span><input type="checkbox" id="flipV"></label>
+        </div>
+      </section>
+
+      <section data-pane="time" role="tabpanel" hidden>
+        <div class="sh">Playback</div>
+        <div class="list"><div class="cell col"><div class="r"><span class="grow">Speed</span><span class="v" id="speedV">100%</span></div><input type="range" id="speed" min="10" max="400" value="100" aria-label="Speed"></div></div>
+        <div class="sh">Trim</div>
+        <div class="list">
+          <div class="cell"><label class="grow t" for="start">Start frame</label><input type="number" id="start" class="fld" step="1" inputmode="numeric"></div>
+          <div class="cell"><label class="grow t" for="end">End frame</label><input type="number" id="end" class="fld" step="1" inputmode="numeric"></div>
+        </div>
+        <div class="sf">Leave blank to keep the original range.</div>
+      </section>
+
+      <section data-pane="style" role="tabpanel" hidden>
+        <div class="sh">Appearance</div>
+        <div class="list">
+          <div class="cell col"><div class="r"><span class="grow">Stroke width</span><span class="v" id="strokeV">100%</span></div><input type="range" id="stroke" min="0" max="400" value="100" aria-label="Stroke width"></div>
+          <div class="cell col"><div class="r"><span class="grow">Opacity</span><span class="v" id="opacityV">100%</span></div><input type="range" id="opacity" min="0" max="100" value="100" aria-label="Opacity"></div>
+        </div>
+        <div class="sh">Background</div>
+        <div class="list">
+          <label class="cell"><span class="grow t">Background color</span><input type="checkbox" id="bgOn"></label>
+          <div class="cell"><span class="grow t">Color</span><input type="color" id="bg" value="#ffffff" aria-label="Background color"></div>
+        </div>
+        <div class="sf">Adds a solid layer behind the animation.</div>
+      </section>
+
+      <section data-pane="layers" role="tabpanel" hidden>
+        <div class="sh">Layers</div>
+        <div class="list" id="layers"></div>
+        <div class="sf">Deleting a layer detaches any layers that were parented to it. Use Undo to bring it back.</div>
+      </section>
+
+      <section data-pane="json" role="tabpanel" hidden>
+        <div class="sh">Raw JSON</div>
+        <div class="list"><div class="cell"><textarea class="code" id="json" spellcheck="false" aria-label="Animation JSON"></textarea></div></div>
+        <div class="sf">Edit by hand, then apply. Applying makes it the new starting point and clears slider edits.</div>
+        <div class="r" style="margin:14px 16px 0;gap:10px"><button class="btn tint" id="jsonLoad">Load Current</button><button class="btn fill" id="jsonApply">Apply</button><span id="jsonMsg" class="muted"></span></div>
+      </section>
     </div>
   </div>
 </div>
@@ -321,7 +540,6 @@ async function convertFiles(files,opts){ // files: [{name,bytes:Uint8Array}] -> 
 }
 /* ============================== /CORE ============================== */
 </script>
-
 <script id="editcore">
 /* ============================== EDIT CORE (no DOM) ==============================
    Non-destructive: applyEdits(base, params) always starts from the untouched base
@@ -452,7 +670,28 @@ const durationOf=a=>(a.op-a.ip)/a.fr;
 </script>
 
 <script>
-/* ============================== UI ============================== */
+/* ============================== PAGE UI ============================== */
+function paintRange(el){
+  const mn=+el.min,mx=+el.max,v=+el.value,p=(v-mn)/(mx-mn)*100;let a=0,b=p;
+  if(mn<0&&mx>0){const c=-mn/(mx-mn)*100;a=Math.min(c,p);b=Math.max(c,p)}
+  el.style.setProperty("--a",a+"%");el.style.setProperty("--b",b+"%");
+}
+function paintAllRanges(){document.querySelectorAll("input[type=range]").forEach(paintRange)}
+document.addEventListener("input",e=>{if(e.target.matches&&e.target.matches("input[type=range]"))paintRange(e.target)});
+
+function initSeg(sel){ // turns a <select data-seg> into a segmented control; the select stays the source of truth
+  const seg=document.createElement("div");seg.className="seg";seg.setAttribute("role","radiogroup");seg.setAttribute("aria-label",sel.getAttribute("aria-label")||"");
+  const sync=()=>[...seg.children].forEach(b=>b.setAttribute("aria-checked",String(b.dataset.v===sel.value)));
+  [...sel.options].forEach(o=>{
+    const b=document.createElement("button");b.type="button";b.setAttribute("role","radio");b.textContent=o.textContent;b.dataset.v=o.value;
+    b.onclick=()=>{if(sel.value===o.value)return;sel.value=o.value;sel.dispatchEvent(new Event("input",{bubbles:true}));sel.dispatchEvent(new Event("change",{bubbles:true}));sync()};
+    seg.appendChild(b);
+  });
+  sel._sync=sync;sel.hidden=true;sel.after(seg);sync();
+}
+document.querySelectorAll("select[data-seg]").forEach(initSeg);
+paintAllRanges();
+
 if(typeof document!=="undefined"){
 const $=id=>document.getElementById(id);
 const drop=$("drop"),fileIn=$("file"),list=$("list"),actions=$("actions");
@@ -460,12 +699,17 @@ let results=[];
 const fmt=n=>n<1024?n+" B":n<1048576?(n/1024).toFixed(1)+" KB":(n/1048576).toFixed(2)+" MB";
 const opts=()=>({inline:$("inline").checked,extract:$("extract").checked,pretty:$("pretty").checked,bundle:$("bundle").checked,version:$("ver").value});
 
+/* large title -> inline title in the nav bar on scroll */
+new IntersectionObserver(([e])=>$("nav").classList.toggle("scrolled",!e.isIntersecting),{rootMargin:"-52px 0px 0px 0px"}).observe($("largeTitle"));
+
 function row(cls,name,meta,url,dl,onEdit){
-  const d=document.createElement("div");d.className="item "+cls;
-  d.innerHTML='<div class="n"></div><div class="m"></div>';
-  d.firstChild.textContent=name;d.children[1].textContent=meta;
-  if(onEdit){const b=document.createElement("button");b.className="ghost";b.textContent="Edit";b.onclick=onEdit;d.appendChild(b)}
-  if(url){const a=document.createElement("a");a.className="btn";a.href=url;a.download=dl;a.textContent="Download";d.appendChild(a)}
+  const kind=cls==="err"?"err":/\.lottie$/i.test(name)?"lottie":"json";
+  const icon={err:"i-warn",lottie:"i-play",json:"i-braces"}[kind];
+  const d=document.createElement("div");d.className="cell file "+cls;
+  d.innerHTML='<div class="tile '+kind+'"><svg class="i"><use href="#'+icon+'"/></svg></div><div class="grow"><div class="t"></div><div class="s"></div></div>';
+  d.querySelector(".t").textContent=name;d.querySelector(".s").textContent=meta;
+  if(onEdit){const b=document.createElement("button");b.className="btn tint";b.textContent="Edit";b.onclick=onEdit;d.appendChild(b)}
+  if(url){const a=document.createElement("a");a.className="btn plain";a.href=url;a.download=dl;a.innerHTML='<svg class="i"><use href="#i-download"/></svg>Save';d.appendChild(a)}
   list.appendChild(d);
 }
 async function handle(fileList){
@@ -511,35 +755,49 @@ $("zipAll").onclick=async()=>{
 let ed=null; // {name,anims,idx,base,P,hist,hi,anim,tok,out}
 const $e=id=>document.getElementById(id);
 const LAYER_TYPES={0:"Precomp",1:"Solid",2:"Image",3:"Null",4:"Shape",5:"Text",6:"Audio",13:"Camera"};
+const ico=n=>'<svg class="i"><use href="#i-'+n+'"/></svg>';
+
+/* lottie-web preview player: self-hosted copy first, CDN as a fallback */
 let lottiePromise=null;
 function ensureLottie(){
   if(window.lottie)return Promise.resolve();
   if(!lottiePromise)lottiePromise=new Promise((res,rej)=>{
     const load=src=>new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)});
-    // self-hosted copy first, CDN as a fallback (e.g. when index.html is opened on its own)
     load("lottie.min.js").catch(()=>load("https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js")).then(res,()=>{lottiePromise=null;rej(new Error("player"))});
   });
   return lottiePromise;
 }
 function dlBlob(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+function toast(msg){
+  let t=$e("toast");if(t)t.remove();
+  t=document.createElement("div");t.id="toast";t.setAttribute("role","status");t.textContent=msg;document.body.appendChild(t);
+  setTimeout(()=>{if(t.parentNode)t.remove()},1800);
+}
+function setPlaying(on){const b=$e("play");b.innerHTML=ico(on?"pause":"play");b.setAttribute("aria-label",on?"Pause":"Play")}
+function updateHistBtns(){if(!ed)return;$e("edUndo").disabled=ed.hi<=0;$e("edRedo").disabled=ed.hi>=ed.hist.length-1}
+function selectTab(name){
+  document.querySelectorAll("#tabs [role=tab]").forEach(t=>t.setAttribute("aria-selected",String(t.dataset.tab===name)));
+  document.querySelectorAll(".ed-side [data-pane]").forEach(p=>p.hidden=p.dataset.pane!==name);
+}
 
 async function openEditor(name,bytes){
   const kind=sniff(bytes);let anims;
   if(kind==="lottie")anims=await dotLottieToJson(bytes,{inline:true});
   else anims=[[stem(name),parseJSON(bytes,name)]];
   for(const [id,a] of anims)validateLottie(a,name+":"+id);
+  if(ed&&ed.anim){ed.anim.destroy()}
   ed={name:stem(name),anims,idx:0,anim:null,tok:0,hist:[],hi:0};
-  $e("edTitle").textContent="Editing "+name;
+  $e("edTitle").textContent=name;
   const sel=$e("edAnim");sel.hidden=anims.length<2;
   sel.innerHTML="";anims.forEach(([id],i)=>{const o=document.createElement("option");o.value=i;o.textContent=id;sel.appendChild(o)});
-  $e("editor").hidden=false;document.body.style.overflow="hidden";
-  loadAnim(0);
+  const el=$e("editor");el.classList.remove("closing");el.hidden=false;document.body.style.overflow="hidden";el.scrollTop=0;
+  selectTab("color");loadAnim(0);$e("edClose").focus({preventScroll:true});
 }
 function loadAnim(i){
   ed.idx=i;ed.base=ed.anims[i][1];ed.P=DEFAULTS();
   ed.hist=[{base:ed.base,P:clone(ed.P)}];ed.hi=0;
   if(ed.anim){ed.anim.destroy();ed.anim=null}
-  buildAll();render();
+  buildAll();updateHistBtns();render();
 }
 function buildAll(){syncUI();buildSwatches();buildLayers()}
 
@@ -552,21 +810,24 @@ function syncUI(){
   $e("fit").value=P.fit;$e("bg").value=P.bg||"#ffffff";
   $e("w").placeholder=b.w;$e("h").placeholder=b.h;$e("w").value=P.w??"";$e("h").value=P.h??"";
   $e("start").placeholder=b.ip;$e("end").placeholder=b.op;$e("start").value=P.start??"";$e("end").value=P.end??"";
+  document.querySelectorAll("select[data-seg]").forEach(s=>s._sync&&s._sync());
+  paintAllRanges();
 }
+function emptyCell(box,msg){const c=document.createElement("div");c.className="cell";c.innerHTML='<span class="muted"></span>';c.firstChild.textContent=msg;box.appendChild(c)}
 function buildSwatches(){
   const box=$e("swatches");box.innerHTML="";
   const cols=listColors(ed.base);
-  if(!cols.length){box.innerHTML='<div style="font-size:13px;color:var(--mut)">No editable solid colors found (the file may use images or expressions).</div>';return}
+  if(!cols.length){emptyCell(box,"No editable solid colors found. The file may use images or expressions.");return}
   for(const [hex,count] of cols.slice(0,80)){
-    const cur=ed.P.colors[hex]||hex,d=document.createElement("div");d.className="sw";
-    d.innerHTML='<input type="color"><code></code><span class="c"></span><button class="ghost">Reset</button>';
+    const cur=ed.P.colors[hex]||hex,d=document.createElement("div");d.className="cell sw";
+    d.innerHTML='<input type="color" aria-label="Color"><code></code><span class="c"></span><button class="btn plain">Reset</button>';
     const inp=d.children[0],code=d.children[1],c=d.children[2],rs=d.children[3];
     inp.value=cur;code.textContent=cur;c.textContent=count+"×";rs.hidden=cur===hex;
     inp.oninput=()=>{if(inp.value===hex)delete ed.P.colors[hex];else ed.P.colors[hex]=inp.value;code.textContent=inp.value;rs.hidden=inp.value===hex;schedule()};
     rs.onclick=()=>{delete ed.P.colors[hex];inp.value=hex;code.textContent=hex;rs.hidden=true;schedule();commit()};
     box.appendChild(d);
   }
-  if(cols.length>80){const n=document.createElement("div");n.style.cssText="font-size:12px;color:var(--mut)";n.textContent="Showing the 80 most used of "+cols.length+" colors. Use the sliders for the rest.";box.appendChild(n)}
+  if(cols.length>80)emptyCell(box,"Showing the 80 most used of "+cols.length+" colors. Use the sliders for the rest.");
 }
 function setLayer(i,patch){
   const e=Object.assign(ed.P.layers[i]||{},patch);
@@ -575,18 +836,19 @@ function setLayer(i,patch){
 function buildLayers(){
   const box=$e("layers");box.innerHTML="";
   ed.base.layers.forEach((L,i)=>{
-    const e=ed.P.layers[i]||{},d=document.createElement("div");d.className="ly"+(e.deleted?" del":"");
-    d.innerHTML='<input type="checkbox" title="Visible"><span class="t"></span><input type="text"><button class="ghost"></button>';
-    const vis=d.children[0],t=d.children[1],nm=d.children[2],bt=d.children[3];
+    const e=ed.P.layers[i]||{},d=document.createElement("div");d.className="cell ly"+(e.deleted?" del":"");
+    d.innerHTML='<span class="ty"></span><input type="text" class="fld plain" aria-label="Layer name"><input type="checkbox" aria-label="Visible" title="Visible"><button class="btn plain"></button>';
+    const t=d.children[0],nm=d.children[1],vis=d.children[2],bt=d.children[3];
     vis.checked=!e.hidden;t.textContent=LAYER_TYPES[L.ty]||("ty"+L.ty);
     nm.value=e.name||L.nm||"";nm.placeholder="Layer "+(i+1);
-    bt.textContent=e.deleted?"Restore":"Delete";
+    if(e.deleted){bt.textContent="Restore";bt.setAttribute("aria-label","Restore layer");vis.hidden=true}
+    else{bt.innerHTML=ico("trash");bt.classList.add("red");bt.setAttribute("aria-label","Delete layer")}
     vis.onchange=()=>{setLayer(i,{hidden:!vis.checked});schedule();commit()};
     nm.oninput=()=>{setLayer(i,{name:nm.value.trim()&&nm.value!==L.nm?nm.value.trim():""});schedule()};
     bt.onclick=()=>{setLayer(i,{deleted:!e.deleted});buildLayers();schedule();commit()};
     box.appendChild(d);
   });
-  if(!ed.base.layers.length)box.textContent="No layers.";
+  if(!ed.base.layers.length)emptyCell(box,"No layers.");
 }
 
 /* ---- history ---- */
@@ -595,10 +857,10 @@ function commit(){
   if(cur.base===ed.base&&JSON.stringify(cur.P)===snap)return;
   ed.hist=ed.hist.slice(0,ed.hi+1);ed.hist.push({base:ed.base,P:JSON.parse(snap)});
   if(ed.hist.length>80)ed.hist.shift();
-  ed.hi=ed.hist.length-1;
+  ed.hi=ed.hist.length-1;updateHistBtns();
 }
 function restore(i){
-  ed.hi=i;const s=ed.hist[i];ed.base=s.base;ed.P=clone(s.P);buildAll();render();
+  ed.hi=i;const s=ed.hist[i];ed.base=s.base;ed.P=clone(s.P);buildAll();updateHistBtns();render();
 }
 
 /* ---- preview ---- */
@@ -615,29 +877,35 @@ async function render(){
   $e("stats").textContent=out.w+"×"+out.h+" · "+(+out.fr.toFixed(2))+" fps · "+durationOf(out).toFixed(2)+" s · "+out.layers.length+" layers";
   const stage=$e("stage");
   try{await ensureLottie()}catch{
-    if(tok===ed.tok)stage.innerHTML='<div id="stageMsg">The live preview needs internet access to load the lottie-web player (cdnjs).<br>Editing and downloads still work.</div>';
+    if(ed&&tok===ed.tok)stage.innerHTML='<div id="stageMsg">The live preview couldn’t load its player.<br>Editing and exporting still work.</div>';
     return;
   }
-  if(tok!==ed.tok)return;
+  if(!ed||tok!==ed.tok)return;
   const prev=ed.anim,wasPaused=prev?prev.isPaused:false,frame=prev?prev.currentFrame:0;
   if(prev)prev.destroy();
   stage.innerHTML="";
   const a=lottie.loadAnimation({container:stage,renderer:"svg",loop:$e("loop").checked,autoplay:false,animationData:out});
   ed.anim=a;
-  const scrub=$e("scrub"),info=$e("frameInfo"),play=$e("play");
+  const scrub=$e("scrub"),info=$e("frameInfo");
   a.addEventListener("DOMLoaded",()=>{
     scrub.max=Math.max(1,Math.floor(a.totalFrames)-1);
     const f=Math.min(frame,a.totalFrames-1);
     if(wasPaused)a.goToAndStop(f,true);else a.goToAndPlay(f,true);
-    play.textContent=wasPaused?"Play":"Pause";
+    setPlaying(!wasPaused);
   });
-  a.addEventListener("enterFrame",()=>{scrub.value=a.currentFrame;info.textContent=Math.round(a.currentFrame)+" / "+Math.round(a.totalFrames)});
-  a.addEventListener("complete",()=>{play.textContent="Play"});
+  a.addEventListener("enterFrame",()=>{scrub.value=a.currentFrame;paintRange(scrub);info.textContent=Math.round(a.currentFrame)+" / "+Math.round(a.totalFrames)});
+  a.addEventListener("complete",()=>setPlaying(false));
 }
 
 /* ---- controls ---- */
 (function wire(){
   const side=document.querySelector(".ed-side");
+  /* tabs (segmented control) with arrow-key navigation */
+  const tabs=[...document.querySelectorAll("#tabs [role=tab]")];
+  tabs.forEach((t,i)=>{
+    t.onclick=()=>selectTab(t.dataset.tab);
+    t.onkeydown=e=>{if(e.key==="ArrowRight"||e.key==="ArrowLeft"){const n=tabs[(i+(e.key==="ArrowRight"?1:-1)+tabs.length)%tabs.length];n.focus();selectTab(n.dataset.tab)}};
+  });
   side.addEventListener("input",e=>{
     if(!ed)return;const t=e.target,id=t.id,P=ed.P;
     if(id in RANGES){P[id]=+t.value;$e(id+"V").textContent=t.value+RANGES[id]}
@@ -658,34 +926,47 @@ async function render(){
   side.addEventListener("change",()=>{if(ed)commit()});
   $e("edUndo").onclick=()=>{if(ed&&ed.hi>0)restore(ed.hi-1)};
   $e("edRedo").onclick=()=>{if(ed&&ed.hi<ed.hist.length-1)restore(ed.hi+1)};
-  $e("edReset").onclick=()=>{if(!ed)return;ed.base=ed.anims[ed.idx][1];ed.P=DEFAULTS();commit();buildAll();render()};
+  $e("edReset").onclick=()=>{if(!ed)return;ed.base=ed.anims[ed.idx][1];ed.P=DEFAULTS();commit();buildAll();render();toast("All edits reset")};
   $e("edAnim").onchange=e=>loadAnim(+e.target.value);
   $e("edClose").onclick=closeEditor;
+
+  /* Export popover */
+  const menu=$e("exportMenu"),eb=$e("exportBtn");
+  const setMenu=open=>{menu.hidden=!open;eb.setAttribute("aria-expanded",String(open));if(open)menu.querySelector(".mi").focus()};
+  eb.onclick=e=>{e.stopPropagation();setMenu(menu.hidden)};
+  menu.addEventListener("click",()=>setMenu(false));
+  document.addEventListener("pointerdown",e=>{if(!menu.hidden&&!e.target.closest(".menu-wrap"))setMenu(false)});
+  menu.addEventListener("keydown",e=>{
+    const items=[...menu.querySelectorAll(".mi")],i=items.indexOf(document.activeElement);
+    if(e.key==="ArrowDown"){e.preventDefault();items[(i+1)%items.length].focus()}
+    if(e.key==="ArrowUp"){e.preventDefault();items[(i-1+items.length)%items.length].focus()}
+  });
+
   document.addEventListener("keydown",e=>{
     if(!ed||$e("editor").hidden)return;
-    if(e.key==="Escape"&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))closeEditor();
-    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"&&!/TEXTAREA/.test(document.activeElement.tagName)){e.preventDefault();e.shiftKey?$e("edRedo").click():$e("edUndo").click()}
+    if(e.key==="Escape"){if(!menu.hidden){setMenu(false);eb.focus()}else if(!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))closeEditor()}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"&&!/TEXTAREA|INPUT/.test(document.activeElement.tagName)){e.preventDefault();e.shiftKey?$e("edRedo").click():$e("edUndo").click()}
   });
-  $e("play").onclick=()=>{const a=ed&&ed.anim;if(!a)return;if(a.isPaused){a.play();$e("play").textContent="Pause"}else{a.pause();$e("play").textContent="Play"}};
-  $e("scrub").oninput=e=>{const a=ed&&ed.anim;if(!a)return;a.goToAndStop(+e.target.value,true);$e("play").textContent="Play"};
+  $e("play").onclick=()=>{const a=ed&&ed.anim;if(!a)return;if(a.isPaused){a.play();setPlaying(true)}else{a.pause();setPlaying(false)}};
+  $e("scrub").oninput=e=>{const a=ed&&ed.anim;if(!a)return;a.goToAndStop(+e.target.value,true);setPlaying(false)};
   $e("loop").onchange=e=>{if(ed&&ed.anim)ed.anim.setLoop(e.target.checked)};
   $e("pbg").onchange=setStageBg;
+
   const dlName=ext=>ed.name+"-edited."+ext;
   $e("edJson").onclick=()=>{if(!ed)return;
     dlBlob(new Blob([JSON.stringify(applyEdits(ed.base,ed.P),null,$e("pretty").checked?2:0)],{type:"application/json"}),dlName("json"))};
   $e("edLottie").onclick=async()=>{if(!ed)return;
     const id=safeName(ed.anims[ed.idx][0]);
     dlBlob(await jsonToDotLottie([[id,applyEdits(ed.base,ed.P)]],{extract:$e("extract").checked,version:$e("ver").value}),dlName("lottie"))};
-  $e("edCopy").onclick=async()=>{if(!ed)return;const b=$e("edCopy");
-    try{await navigator.clipboard.writeText(JSON.stringify(applyEdits(ed.base,ed.P)));b.textContent="Copied";}catch{b.textContent="Copy failed"}
-    setTimeout(()=>b.textContent="Copy JSON",1500)};
+  $e("edCopy").onclick=async()=>{if(!ed)return;
+    try{await navigator.clipboard.writeText(JSON.stringify(applyEdits(ed.base,ed.P)));toast("Copied to clipboard")}catch{toast("Couldn’t copy")}};
   $e("jsonLoad").onclick=()=>{if(ed){$e("json").value=JSON.stringify(applyEdits(ed.base,ed.P),null,2);$e("jsonMsg").textContent=""}};
   $e("jsonApply").onclick=()=>{
     if(!ed)return;const msg=$e("jsonMsg");
     try{
       const o=JSON.parse($e("json").value);validateLottie(o,"JSON");
-      ed.base=o;ed.P=DEFAULTS();commit();buildAll();render();msg.style.color="var(--ok)";msg.textContent="Applied"
-    }catch(err){msg.style.color="var(--err)";msg.textContent=err.message}
+      ed.base=o;ed.P=DEFAULTS();commit();buildAll();render();msg.style.color="var(--green)";msg.textContent="Applied"
+    }catch(err){msg.style.color="var(--red)";msg.textContent=err.message}
   };
   $e("openEd").onclick=()=>$e("edFile").click();
   $e("edFile").onchange=async e=>{
@@ -694,8 +975,12 @@ async function render(){
   };
 })();
 function closeEditor(){
+  const el=$e("editor");if(el.hidden||el.classList.contains("closing"))return;
   if(ed&&ed.anim){ed.anim.destroy();ed.anim=null}
-  $e("stage").innerHTML="";$e("editor").hidden=true;document.body.style.overflow="";ed=null;
+  ed=null;$e("exportMenu").hidden=true;
+  let fin=false;
+  const done=()=>{if(fin||!el.classList.contains("closing"))return;fin=true;el.hidden=true;el.classList.remove("closing");$e("stage").innerHTML="";document.body.style.overflow=""};
+  el.classList.add("closing");el.addEventListener("animationend",done,{once:true});setTimeout(done,380);
 }
 </script>
 </body>
